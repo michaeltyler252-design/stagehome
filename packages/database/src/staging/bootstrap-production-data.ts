@@ -16,22 +16,37 @@
 process.env.NODE_ENV = "development";
 
 import { prisma } from "../client";
+import { importCounty } from "./import-county";
 import { main as seedLookupData } from "../seed/index";
 import { main as seedBlogPosts } from "./seed-blog-posts";
 import { main as promoteAndVerifyUniversities } from "./dev-promote-and-verify-universities";
 import { main as seedSearchData } from "./dev-seed-search-data";
 
+const COUNTIES = ["nairobi", "kiambu", "nakuru"];
+
 async function main() {
-  console.log("=== [1/4] Seeding lookup/taxonomy data ===");
+  console.log("=== [1/5] Seeding lookup/taxonomy data ===");
   await seedLookupData();
 
-  console.log("=== [2/4] Publishing blog content ===");
+  console.log("=== [2/5] Publishing blog content ===");
   await seedBlogPosts();
 
-  console.log("=== [3/4] Promoting and verifying universities ===");
+  console.log("=== [3/5] Importing county source data into staging ===");
+  // Must happen BEFORE university promotion — that step only promotes
+  // whatever raw records already exist in staging, and does nothing if
+  // called first against an empty staging schema (as happened on the
+  // first bootstrap run: 0 universities were promoted because this step
+  // hadn't run yet).
+  for (const countySlug of COUNTIES) {
+    await importCounty(countySlug);
+  }
+
+  console.log("=== [4/5] Promoting and verifying universities ===");
   await promoteAndVerifyUniversities();
 
-  console.log("=== [4/4] Importing, promoting, approving, and publishing properties ===");
+  console.log("=== [5/5] Promoting, approving, and publishing properties ===");
+  // Re-imports the same counties internally, but importCounty is
+  // checksum-based and idempotent, so this is a safe no-op re-run.
   await seedSearchData();
 
   console.log("=== Bootstrap complete ===");
