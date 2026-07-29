@@ -1,0 +1,25 @@
+{
+  "importBatch": "nyeri-phase1-milestone1-audit",
+  "county": "Nyeri",
+  "note": "Raw text preserved verbatim from the supplied master document (Part O). Nothing here is invented — every record is SOURCE_SUPPLIED_UNVERIFIED per Part B rules 4 and 6. See docs/data-quality/nyeri-institution-verification-register.md and nyeri-property-verification-register.md for known issues per record. A third record nested under this county's heading in the source (Jaramogi Oginga Odinga University of Science and Technology / Bondo Central Residencies) was deliberately excluded — its own 'Town: Bondo' address places it in Siaya County, not Nyeri, and Siaya is outside the Phase 1 rollout entirely. See the institution register for the full explanation.",
+  "records": [
+    {
+      "university": "Dedan Kimathi University of Technology (DeKUT)",
+      "property": "Kimathi Pinnacle Hostels",
+      "sourceFile": "Pasted text(154).txt",
+      "rawTextFile": "raw/kimathi-pinnacle-hostels.txt",
+      "knownIssues": [
+        "This property name appears in the master document's own quality-control register as a repeated record consolidated by name during the source document's own dedup pass, prior to this platform's audit — this is the canonical, already-deduplicated version."
+      ]
+    },
+    {
+      "university": "Karatina University",
+      "property": "KarU Plaza Residencies",
+      "sourceFile": "Pasted markdown (4).md",
+      "rawTextFile": "raw/karu-plaza-residencies.txt",
+      "knownIssues": [
+        "This property name appears in the master document's own quality-control register as a repeated record consolidated by name during the source document's own dedup pass, prior to this platform's audit — this is the canonical, already-deduplicated version."
+      ]
+    }
+  ]
+}

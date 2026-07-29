@@ -1,0 +1,83 @@
+### Kisii University
+
+#### Nyabururu Academic Residency
+
+##### University Information
+*   **University Name:** Kisii University
+*   **County:** Kisii
+*   **Campus:** Main Campus
+*   **Town:** Kisii
+*   **GPS Coordinates:** -0.6824, 34.7811
+
+##### Property Information
+*   **Property Name:** Nyabururu Academic Residency
+*   **Property Type:** Residential Studio Block / Student Units
+*   **Description:** Modern multi-story building situated along the expanding university residential corridor, designed for students and research professionals seeking clean, quiet spaces.
+*   **Suitable For:** University Students, Postgraduates, Faculty Staff
+*   **Address:** Kilgoris Road, Near University Main Gate
+*   **Town:** Kisii
+*   **Estate/Neighbourhood:** Nyabururu Area / University Corridor
+*   **Google Maps Link:** Not Available
+
+##### Distance from University
+*   **Distance:** 0.8 km
+*   **Walking Time:** 10 minutes
+*   **Driving Time:** 2 minutes
+*   **Public Transport Time:** 3 minutes
+
+##### Rent & Pricing
+*   **Monthly Rent:** KES 7,000 to KES 11,500 (Based on layout size and single occupancy specs)
+*   **Deposit:** Equivalent to 1 Month's Rent
+*   **Booking Fee:** Not Available
+*   **Agency Fee:** None
+*   **Service Charge:** Included in rent
+*   **Water Charges:** Flat KES 300 monthly rate
+*   **Electricity Charges:** Standalone prepaid token meters per unit
+*   **Internet Charges:** Included in rent (High-speed building Wi-Fi)
+*   **Parking Charges:** Free basic courtyard spaces
+*   **Hidden Fees:** None
+
+##### Accommodation Types
+
+| Type | Available | Status |
+| :--- | :--- | :--- |
+| Single Room | No | Not Available |
+| Bedsitter | Yes | Standard Supply |
+| Studio | Yes | Premium Layouts |
+| One Bedroom | No | Not Available |
+| Two Bedroom | No | Not Available |
+| Three Bedroom | No | Not Available |
+| Shared Apartment | No | Not Available |
+| Hostel | No | Not Available |
+| Student Residence | Yes | Primary Focus |
+| Furnished | No | Not Available |
+| Unfurnished | Yes | Standard Clean Units |
+
+##### Utilities
+*   **Water Supply:** High reliability backed by borehole systems and heavy plastic roof storage units
+*   **Electricity:** Kenya Power grid connection with standalone sub-meters
+*   **Fibre Internet:** Infrastructure connected directly to town backbone systems
+*   **Wi-Fi:** High-speed building-wide managed wireless internet routing
+*   **Borehole:** Yes
+*   **Water Tanks:** High-capacity plastic overhead reserve structures
+*   **Solar Power:** Solar pathway light arrays active overnight
+*   **Backup Generator:** Not Available
+*   **Laundry Area:** Shared ground floor wash areas and deep outdoor drying lines
+*   **Garbage Collection:** Weekly organized collection service included in rent framework
+
+##### Security
+*   **Gated Compound:** High perimeter brick boundary wall with razor line wire
+*   **CCTV:** Positioned along primary exit corridors and vehicle entry gates
+*   **Security Guards:** Uniformed guard presence on location from dusk to dawn daily
+*   **Electric Fence:** Yes
+*   **Student-Friendly Area:** Highly populated, safe student residential neighborhood
+*   **Street Lighting:** Functional community street lights active at night
+*   **Nearby Police Station:** Kisii Central Police Station (Approx. 2.0 km away)
+*   **Crime Rating:** Low
+*   **Flood Risk:** Minimal
+
+##### Amenities
+*   **Kitchen:** Fitted kitchenette counters with tiled sink space
+*   **Bathroom:** Private en-suite tiled bathroom cubicle
+*   **Hot Shower:** Installed instant electric water heaters
+*   **Balcony:** Select upper floor rooms feature step-out verandas

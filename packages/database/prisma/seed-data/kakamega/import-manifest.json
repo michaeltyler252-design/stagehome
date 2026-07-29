@@ -1,0 +1,14 @@
+{
+  "importBatch": "kakamega-phase1-milestone1-audit",
+  "county": "Kakamega",
+  "note": "Raw text preserved verbatim from the supplied master document (Part O). Nothing here is invented — every record is SOURCE_SUPPLIED_UNVERIFIED per Part B rules 4 and 6. See docs/data-quality/kakamega-institution-verification-register.md and kakamega-property-verification-register.md for known issues per record.",
+  "records": [
+    {
+      "university": "Masinde Muliro University of Science and Technology (MMUST)",
+      "property": "Kakamega Boulevard Apartments",
+      "sourceFile": "Pasted text (10).txt",
+      "rawTextFile": "raw/kakamega-boulevard-apartments.txt",
+      "knownIssues": []
+    }
+  ]
+}

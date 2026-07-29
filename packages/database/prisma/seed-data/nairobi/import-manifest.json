@@ -1,0 +1,107 @@
+{
+  "importBatch": "nairobi-phase1-milestone2-audit",
+  "county": "Nairobi",
+  "note": "Raw text preserved verbatim from the supplied master document (Part O). Nothing here is invented — every record is SOURCE_SUPPLIED_UNVERIFIED per Part B rules 4 and 6. See docs/data-quality/nairobi-institution-verification-register.md and nairobi-property-verification-register.md for known issues per record.",
+  "records": [
+    {
+      "university": "Africa International University (AIU)",
+      "property": "Karen Village Suites",
+      "sourceFile": "Pasted text (12).txt",
+      "rawTextFile": "raw/karen-village-suites.txt",
+      "knownIssues": []
+    },
+    {
+      "university": "Catholic University of Eastern Africa (CUEA)",
+      "property": "Bogani Premium Apartments",
+      "sourceFile": "Pasted text (12).txt",
+      "rawTextFile": "raw/bogani-premium-apartments.txt",
+      "knownIssues": []
+    },
+    {
+      "university": "Cooperative University of Kenya",
+      "property": "Karen Ridge Student Residency",
+      "sourceFile": "Pasted text (12).txt",
+      "rawTextFile": "raw/karen-ridge-student-residency.txt",
+      "knownIssues": []
+    },
+    {
+      "university": "Daystar University (Nairobi Campus)",
+      "property": "Kilimani Premium Studios",
+      "sourceFile": "Pasted text (12).txt",
+      "rawTextFile": "raw/kilimani-premium-studios.txt",
+      "knownIssues": [
+        "Campus name 'Nairobi Campus' does not match Daystar's known public campus names (Athi River, Valley Road) — Verification Required"
+      ]
+    },
+    {
+      "university": "KCA University",
+      "property": "Ruaraka Avenue Apartments",
+      "sourceFile": "Pasted text (12).txt",
+      "rawTextFile": "raw/ruaraka-avenue-apartments.txt",
+      "knownIssues": []
+    },
+    {
+      "university": "Kenyatta University (City Campus)",
+      "property": "Haile Selassie Executive Studios",
+      "sourceFile": "Pasted markdown (11).md",
+      "rawTextFile": "raw/haile-selassie-executive-studios.txt",
+      "knownIssues": [
+        "Campus name 'City Campus' is not a well-known official KU campus — Verification Required"
+      ]
+    },
+    {
+      "university": "Technical University of Kenya (TUK)",
+      "property": "Station View Residency",
+      "sourceFile": "Information Required (not tagged in first record)",
+      "rawTextFile": "raw/station-view-residency-record-1.txt",
+      "knownIssues": [
+        "DUPLICATE PROPERTY RECORD 1 of 2 under the same heading",
+        "Record is truncated — property information cuts off after the opening line",
+        "conflict_status: FLAGGED — do not merge automatically, see duplicate-conflict-detection-design.md"
+      ]
+    },
+    {
+      "university": "Technical University of Kenya (TUK)",
+      "property": "Station View Residency",
+      "sourceFile": "Pasted markdown (11).md",
+      "rawTextFile": "raw/station-view-residency-record-2.txt",
+      "knownIssues": [
+        "DUPLICATE PROPERTY RECORD 2 of 2 under the same heading",
+        "This record is fuller than record 1 but has not been confirmed as describing the same physical property",
+        "conflict_status: FLAGGED — do not merge automatically, see duplicate-conflict-detection-design.md"
+      ]
+    },
+    {
+      "university": "Mount Kenya University (MKU - Parklands Campus)",
+      "property": "Parklands Academic Suites",
+      "sourceFile": "Pasted text (12).txt",
+      "rawTextFile": "raw/parklands-academic-suites.txt",
+      "knownIssues": []
+    },
+    {
+      "university": "Strathmore University",
+      "property": "Madaraka Executive Suites",
+      "sourceFile": "Pasted text (12).txt",
+      "rawTextFile": "raw/madaraka-executive-suites.txt",
+      "knownIssues": []
+    },
+    {
+      "university": "USIU-Africa",
+      "property": "Roysambu Luxury Studios",
+      "sourceFile": "Pasted text (12).txt",
+      "rawTextFile": "raw/roysambu-luxury-studios.txt",
+      "knownIssues": [
+        "Campus name 'Roysambu' should be cross-checked — USIU-Africa's well-known campus sits on the Thika Road/Kasarani corridor"
+      ]
+    },
+    {
+      "university": "University of Nairobi (UoN)",
+      "property": "Central Plaza Apartments",
+      "sourceFile": "Pasted markdown (3)(1).md",
+      "rawTextFile": "raw/central-plaza-apartments.txt",
+      "knownIssues": [
+        "'Nairobi Campus' does not identify which of UoN's several Nairobi-area campuses this refers to — Verification Required"
+      ]
+    }
+  ]
+}

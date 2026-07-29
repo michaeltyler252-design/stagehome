@@ -1,0 +1,31 @@
+{
+  "importBatch": "kiambu-phase1-milestone1-audit",
+  "county": "Kiambu",
+  "note": "Raw text preserved verbatim from the supplied master document (Part O). Nothing here is invented — every record is SOURCE_SUPPLIED_UNVERIFIED per Part B rules 4 and 6. See docs/data-quality/kiambu-institution-verification-register.md and kiambu-property-verification-register.md for known issues per record.",
+  "records": [
+    {
+      "university": "Jomo Kenyatta University of Agriculture and Technology (JKUAT)",
+      "property": "Oasis Student Heights",
+      "sourceFile": "Pasted markdown (3)(1).md",
+      "rawTextFile": "raw/oasis-student-heights.txt",
+      "knownIssues": []
+    },
+    {
+      "university": "Presbyterian University of East Africa (PUEA)",
+      "property": "Kikuyu Ridge Heights",
+      "sourceFile": "Pasted markdown (7).md",
+      "rawTextFile": "raw/kikuyu-ridge-heights.txt",
+      "knownIssues": []
+    },
+    {
+      "university": "Zetech University",
+      "property": "Juja Academic Heights",
+      "sourceFile": "Pasted text (12).txt",
+      "rawTextFile": "raw/juja-academic-heights.txt",
+      "knownIssues": [
+        "Master document's own quality-control register flags this record as incomplete: 'the source ends after distance details.'",
+        "Monthly Rent, Deposit, Amenities, Contact Details, Availability, and Images are explicitly marked Information Required in the source itself, not inferred by this platform."
+      ]
+    }
+  ]
+}

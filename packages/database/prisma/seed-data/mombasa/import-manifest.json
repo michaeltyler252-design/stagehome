@@ -1,0 +1,14 @@
+{
+  "importBatch": "mombasa-phase1-milestone1-audit",
+  "county": "Mombasa",
+  "note": "Raw text preserved verbatim from a source document supplied directly by the user ('Kenya Premium Rental Marketplace Knowledge Base'), the same source that previously supplied Murang'a and Kisii. Nothing here is invented — every record is SOURCE_SUPPLIED_UNVERIFIED per Part B rules 4 and 6. Mombasa was the last of the three counties flagged as having zero source data in the original master document (see docs/data-quality/phase1-rollout-data-availability-audit.md) — that finding is now fully superseded. See docs/data-quality/mombasa-institution-verification-register.md and mombasa-property-verification-register.md for known issues per record.",
+  "records": [
+    {
+      "university": "Technical University of Mombasa (TUM)",
+      "property": "Tudor Crest Apartments",
+      "sourceFile": "user-supplied: Kenya Premium Rental Marketplace Knowledge Base",
+      "rawTextFile": "raw/tudor-crest-apartments.txt",
+      "knownIssues": []
+    }
+  ]
+}

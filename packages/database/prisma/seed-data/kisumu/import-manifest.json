@@ -1,0 +1,30 @@
+{
+  "importBatch": "kisumu-phase1-milestone1-audit",
+  "county": "Kisumu",
+  "note": "Raw text preserved verbatim from the supplied master document (Part O). Nothing here is invented — every record is SOURCE_SUPPLIED_UNVERIFIED per Part B rules 4 and 6. See docs/data-quality/kisumu-institution-verification-register.md and kisumu-property-verification-register.md for known issues per record.",
+  "records": [
+    {
+      "university": "Great Lakes University of Kisumu",
+      "property": "Kibos Academic Suites",
+      "sourceFile": "Pasted text (10).txt",
+      "rawTextFile": "raw/kibos-academic-suites.txt",
+      "knownIssues": []
+    },
+    {
+      "university": "Kisii University – Kisumu Campus",
+      "property": "Milimani View Residency",
+      "sourceFile": "Pasted text (10).txt",
+      "rawTextFile": "raw/milimani-view-residency.txt",
+      "knownIssues": [
+        "This institution's name references Kisii but the campus is located in Kisumu County, not Kisii County — Kisii County itself has zero source records anywhere in the master document (see phase1-rollout-data-availability-audit.md). Do not conflate this record with a Kisii County listing."
+      ]
+    },
+    {
+      "university": "Maseno University – Kisumu Campus",
+      "property": "Lakeside Academic Plaza",
+      "sourceFile": "Pasted text (10).txt",
+      "rawTextFile": "raw/lakeside-academic-plaza.txt",
+      "knownIssues": []
+    }
+  ]
+}

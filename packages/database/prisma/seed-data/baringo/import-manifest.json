@@ -1,0 +1,8 @@
+{
+  "importBatch": "baringo-phase1-milestone1-audit",
+  "county": "Baringo",
+  "note": "Raw text preserved verbatim from a user-supplied source document. Nothing here is invented — every record is SOURCE_SUPPLIED_UNVERIFIED per Part B rules 4 and 6.",
+  "records": [
+    {"university": "Egerton University - Kabarnet Campus / Local Technical Colleges", "property": "Kabarnet Heights Plaza", "sourceFile": "user-supplied: Kenya Premium Rental Marketplace Knowledge Base", "rawTextFile": "raw/kabarnet-heights-plaza.txt", "knownIssues": ["The linked institution name combines two different entities ('Baringo Technical College / Egerton University - Kabarnet Campus') in its own heading — flag for institution-identity verification specifically."]}
+  ]
+}

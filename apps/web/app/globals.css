@@ -1,0 +1,79 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+@layer base {
+  body {
+    @apply bg-paper text-chalk font-body antialiased;
+  }
+
+  h1,
+  h2,
+  h3 {
+    @apply font-display;
+  }
+
+  a {
+    @apply underline-offset-2;
+  }
+
+  /* Visible keyboard focus everywhere — never suppressed. */
+  :focus-visible {
+    outline: 3px solid theme("colors.murram");
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer components {
+  /* Route-board hero headline treatment */
+  .route-headline {
+    @apply font-display uppercase tracking-tight leading-[0.95];
+    letter-spacing: -0.01em;
+  }
+
+  /* Property card styled like a ticket stub, notched at the price edge */
+  .ticket-card {
+    @apply relative bg-white rounded-ticket border border-chalk/10 shadow-sm overflow-hidden;
+  }
+  .ticket-card::after {
+    content: "";
+    position: absolute;
+    right: -8px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 16px;
+    height: 16px;
+    background: theme("colors.paper");
+    border-radius: 999px;
+    border: 1px solid theme("colors.chalk" / 10%);
+  }
+
+  /* The signature element: a rubber-stamp verification mark. */
+  .verified-stamp {
+    @apply inline-flex items-center gap-1 font-mono text-xs font-bold uppercase tracking-widest;
+    color: theme("colors.signal");
+    border: 2px solid theme("colors.signal");
+    padding: 2px 8px;
+    border-radius: 3px;
+    transform: rotate(-3deg);
+  }
+
+  .fare-badge {
+    @apply font-mono text-sm bg-chalk text-paper px-2 py-0.5 rounded-ticket;
+  }
+}

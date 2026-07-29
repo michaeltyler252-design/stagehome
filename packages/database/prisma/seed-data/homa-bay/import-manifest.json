@@ -1,0 +1,8 @@
+{
+  "importBatch": "homa-bay-phase1-milestone1-audit",
+  "county": "Homa Bay",
+  "note": "Raw text preserved verbatim from a user-supplied source document. Nothing here is invented — every record is SOURCE_SUPPLIED_UNVERIFIED per Part B rules 4 and 6.",
+  "records": [
+    {"university": "Tom Mboya University", "property": "Tom Mboya Academic Heights", "sourceFile": "user-supplied: Kenya Premium Rental Marketplace Knowledge Base", "rawTextFile": "raw/tom-mboya-academic-heights.txt", "knownIssues": ["The supplied source text cuts off immediately after 'Google Maps Link: Not Available' — missing entirely: Distance from University, Rent & Pricing, Accommodation Types, Utilities, Security, Amenities, Nearby Places, Tenancy Rules, Contact Details, Availability, Reviews, Images. This is the most incomplete record in the entire project — even Kisii's incomplete record has pricing and some amenities. No contact information exists, so manager-outreach verification cannot even begin."]}
+  ]
+}

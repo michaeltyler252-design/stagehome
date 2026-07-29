@@ -1,0 +1,86 @@
+#### Station View Residency
+
+
+
+
+**Import status:** `SOURCE_SUPPLIED_UNVERIFIED`
+
+
+
+
+**Source file:** `Pasted markdown (11).md`
+
+
+
+
+**Incomplete fields:** Amenities, Contact Details, Availability, Images — set each to `Information
+Required`.
+
+
+
+
+Property Name:** Station View Residency
+* **Property Type:** Student Residence Block / Bedsitter Complex
+* **Description:** Multi-story residential block catering to university students and corporate
+professionals seeking clean urban living spaces near the primary transport grid.
+* **Suitable For:** University Students, Single Professionals
+* **Address:** Haile Selassie Avenue, Near Nairobi Railway Station
+* **Town:** Nairobi
+* **Estate/Neighbourhood:** Nairobi CBD Edge
+* **Google Maps Link:** Not Available
+
+
+##### Distance from University
+* **Distance:** 0.3 km
+* **Walking Time:** 4 minutes
+* **Driving Time:** 1 minute
+* **Public Transport Time:** Not Applicable (Walking distance preferred)
+
+
+##### Rent & Pricing
+* **Monthly Rent:** KES 15,000 to KES 22,000 (Based on single vs premium bedsitter layout size)
+* **Deposit:** Equivalent to 1 Month's Rent
+* **Booking Fee:** Not Available
+* **Agency Fee:** None
+* **Service Charge:** Included in rent
+* **Water Charges:** Fixed KES 500 per month
+* **Electricity Charges:** Prepaid token meters per unit
+* **Internet Charges:** Included in rent (Wi-Fi access)
+* **Parking Charges:** Free for residents
+* **Hidden Fees:** None
+
+
+##### Accommodation Types
+
+
+| Type | Available | Status |
+| :--- | :--- | :--- |
+| Single Room | No | Not Available |
+| Bedsitter | Yes | Standard Layout |
+| Studio | Yes | Premium Units |
+| One Bedroom | No | Not Available |
+| Two Bedroom | No | Not Available |
+| Three Bedroom | No | Not Available |
+| Shared Apartment | No | Not Available |
+| Hostel | No | Not Available |
+| Student Residence | Yes | Student Friendly |
+| Furnished | Optional | Select short-term setups |
+| Unfurnished | Yes | Standard Long-term |
+
+
+##### Utilities
+* **Water Supply:** High reliability with backup storage tank configurations and borehole integration
+* **Electricity:** Kenya Power mains with individual prepaid meters
+* **Fibre Internet:** Infrastructure connected on-site
+* **Wi-Fi:** High-speed building-wide managed Wi-Fi loop
+* **Borehole:** Yes
+* **Water Tanks:** Overhead and underground water storage tanks installed
+* **Solar Power:** Solar-powered corridor and external lighting grids
+* **Backup Generator:** Common corridor and external lighting backup battery framework
+* **Laundry Area:** Common rooftop drying lines and ground-floor wash sinks
+* **Garbage Collection:** Daily doorstep pickup managed by the service company included
+
+
+##### Security
+* **Gated Compound:** Yes, boundary wall with standard entry gate setup
+* **CCTV:** Installed at primary gate and parking perimeters

@@ -1,0 +1,33 @@
+{
+  "name": "student-housing-marketplace",
+  "private": true,
+  "version": "0.1.0",
+  "engines": {
+    "node": ">=20.11.0",
+    "pnpm": ">=9.0.0"
+  },
+  "packageManager": "pnpm@9.7.0",
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "typecheck": "turbo run typecheck",
+    "db:generate": "pnpm --filter @student-housing/database prisma:generate",
+    "db:migrate:dev": "pnpm --filter @student-housing/database prisma:migrate:dev",
+    "db:migrate:deploy": "pnpm --filter @student-housing/database prisma:migrate:deploy",
+    "db:seed": "pnpm --filter @student-housing/database prisma:seed",
+    "docker:up": "docker compose -f docker-compose.yml up -d",
+    "docker:down": "docker compose -f docker-compose.yml down"
+  },
+  "devDependencies": {
+    "turbo": "^2.0.9",
+    "typescript": "^5.5.4",
+    "prettier": "^3.3.3"
+  },
+  "dependencies": {
+    "next": "^14.2.5",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  }
+}

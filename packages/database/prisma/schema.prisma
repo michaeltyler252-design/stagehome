@@ -1,0 +1,1687 @@
+// ============================================================================
+// Student Housing Marketplace — Canonical Nationwide Data Model
+// Phase 1, Milestone 1: Project Foundation
+//
+// Scope note (read before extending):
+// This schema implements every table group listed in the master spec Part F
+// ("Geography and education", "Identity and organisations", "Property
+// inventory", "Commercial terms", "Booking and payments", "Agreements",
+// "Engagement and operations"). Tables are NATIONWIDE and reusable — no
+// county-specific tables exist, per Part F instruction.
+//
+// Data-quality fields (source_status, verification_status, source_file,
+// source_record_reference, source_url, verified_at, verified_by,
+// confidence_level, conflict_status, publication_status, notes) are applied
+// in full to every entity that can be populated from SOURCE_SUPPLIED_UNVERIFIED
+// external data (geography, education, and property-inventory groups).
+// Operational/transactional tables (bookings, payments, agreements, etc.)
+// carry status + audit timestamps but not the external-source fields, since
+// they are only ever created internally by the platform, never imported.
+//
+// Field-level depth for booking, payment, agreement, and engagement tables
+// is intentionally minimal in Milestone 1. Full column-level design for
+// those tables is Milestone 2 ("Database and seed data") scope, once Nairobi
+// verification and seed strategy are approved.
+// ============================================================================
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions", "multiSchema"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [postgis, pg_trgm]
+  schemas    = ["public", "staging"]
+}
+
+// ----------------------------------------------------------------------------
+// Shared enums
+// ----------------------------------------------------------------------------
+
+enum SourceStatus {
+  @@schema("public")
+  SOURCE_SUPPLIED
+  OFFICIAL_SOURCE
+  MANAGER_SUPPLIED
+  FIELD_VERIFIED
+  MARKETPLACE_DERIVED
+}
+
+enum VerificationStatus {
+  @@schema("public")
+  UNVERIFIED
+  PENDING
+  PARTIALLY_VERIFIED
+  VERIFIED
+  REJECTED
+  EXPIRED
+}
+
+enum ConfidenceLevel {
+  @@schema("public")
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum ConflictStatus {
+  @@schema("public")
+  NONE
+  FLAGGED
+  UNDER_REVIEW
+  RESOLVED
+}
+
+enum PublicationStatus {
+  @@schema("public")
+  DRAFT
+  REVIEW
+  APPROVED
+  PUBLISHED
+  SUSPENDED
+  ARCHIVED
+}
+
+enum UserAccountStatus {
+  @@schema("public")
+  ACTIVE
+  SUSPENDED
+  DELETED
+  PENDING_VERIFICATION
+}
+
+enum BookingStatus {
+  @@schema("public")
+  QUOTE
+  HELD
+  PENDING_PAYMENT
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+  DISPUTED
+}
+
+enum PaymentStatus {
+  @@schema("public")
+  INITIATED
+  PENDING
+  SUCCEEDED
+  FAILED
+  REFUNDED
+  PARTIALLY_REFUNDED
+  CHARGEBACK
+}
+
+enum PaymentProvider {
+  @@schema("public")
+  MPESA_STK
+  MPESA_PAYBILL
+  MPESA_TILL
+  CARD
+  AIRTEL_MONEY
+  BANK_TRANSFER
+}
+
+enum AgreementStatus {
+  @@schema("public")
+  DRAFT
+  SENT
+  PARTIALLY_SIGNED
+  FULLY_SIGNED
+  VOID
+}
+
+// ----------------------------------------------------------------------------
+// Reusable data-quality mixin fields (repeated per-model — Prisma has no mixins)
+//   source_status, verification_status, source_file, source_record_reference,
+//   source_url, verified_at, verified_by, confidence_level, conflict_status,
+//   publication_status, notes
+// ----------------------------------------------------------------------------
+
+// ============================================================================
+// GEOGRAPHY AND EDUCATION
+// ============================================================================
+
+model County {
+  @@schema("public")
+  id                    String              @id @default(cuid())
+  name                  String              @unique
+  slug                  String              @unique
+  rolloutPhase          Int?
+  centroidLat           Float?
+  centroidLng           Float?
+  sourceStatus          SourceStatus        @default(SOURCE_SUPPLIED)
+  verificationStatus    VerificationStatus  @default(UNVERIFIED)
+  sourceFile            String?
+  sourceRecordReference String?
+  sourceUrl             String?
+  verifiedAt            DateTime?
+  verifiedBy            String?
+  confidenceLevel       ConfidenceLevel     @default(LOW)
+  conflictStatus        ConflictStatus      @default(NONE)
+  publicationStatus     PublicationStatus  @default(DRAFT)
+  notes                 String?
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+
+  subCounties  SubCounty[]
+  universities University[]
+  properties   Property[]
+
+  @@map("counties")
+}
+
+model SubCounty {
+  @@schema("public")
+  id                    String              @id @default(cuid())
+  countyId              String
+  county                County              @relation(fields: [countyId], references: [id])
+  name                  String
+  slug                  String
+  sourceStatus          SourceStatus        @default(SOURCE_SUPPLIED)
+  verificationStatus    VerificationStatus  @default(UNVERIFIED)
+  sourceFile            String?
+  sourceRecordReference String?
+  sourceUrl             String?
+  verifiedAt            DateTime?
+  verifiedBy            String?
+  confidenceLevel       ConfidenceLevel     @default(LOW)
+  conflictStatus        ConflictStatus      @default(NONE)
+  publicationStatus     PublicationStatus  @default(DRAFT)
+  notes                 String?
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+
+  towns Town[]
+
+  @@unique([countyId, slug])
+  @@map("sub_counties")
+}
+
+model Town {
+  @@schema("public")
+  id                    String              @id @default(cuid())
+  subCountyId           String
+  subCounty             SubCounty           @relation(fields: [subCountyId], references: [id])
+  name                  String
+  slug                  String
+  sourceStatus          SourceStatus        @default(SOURCE_SUPPLIED)
+  verificationStatus    VerificationStatus  @default(UNVERIFIED)
+  sourceFile            String?
+  sourceRecordReference String?
+  sourceUrl             String?
+  verifiedAt            DateTime?
+  verifiedBy            String?
+  confidenceLevel       ConfidenceLevel     @default(LOW)
+  conflictStatus        ConflictStatus      @default(NONE)
+  publicationStatus     PublicationStatus  @default(DRAFT)
+  notes                 String?
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+
+  estates    Estate[]
+  properties Property[]
+
+  @@unique([subCountyId, slug])
+  @@map("towns")
+}
+
+model Estate {
+  @@schema("public")
+  id                    String              @id @default(cuid())
+  townId                String
+  town                  Town                @relation(fields: [townId], references: [id])
+  name                  String
+  slug                  String
+  description           String?
+  centroidLat           Float?
+  centroidLng           Float?
+  sourceStatus          SourceStatus        @default(SOURCE_SUPPLIED)
+  verificationStatus    VerificationStatus  @default(UNVERIFIED)
+  sourceFile            String?
+  sourceRecordReference String?
+  sourceUrl             String?
+  verifiedAt            DateTime?
+  verifiedBy            String?
+  confidenceLevel       ConfidenceLevel     @default(LOW)
+  conflictStatus        ConflictStatus      @default(NONE)
+  publicationStatus     PublicationStatus  @default(DRAFT)
+  notes                 String?
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+
+  properties    Property[]
+  campusEstates CampusEstate[]
+
+  @@unique([townId, slug])
+  @@map("estates")
+}
+
+model University {
+  @@schema("public")
+  id                    String              @id @default(cuid())
+  countyId              String
+  county                County              @relation(fields: [countyId], references: [id])
+  officialName          String
+  slug                  String              @unique
+  type                  String? // public | private | Information Required
+  accreditationStatus   String?             @default("Verification Required")
+  website               String?
+  sourceStatus          SourceStatus        @default(SOURCE_SUPPLIED)
+  verificationStatus    VerificationStatus  @default(UNVERIFIED)
+  sourceFile            String?
+  sourceRecordReference String?
+  sourceUrl             String?
+  verifiedAt            DateTime?
+  verifiedBy            String?
+  confidenceLevel       ConfidenceLevel     @default(LOW)
+  conflictStatus        ConflictStatus      @default(NONE)
+  publicationStatus     PublicationStatus  @default(DRAFT)
+  notes                 String?
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+
+  aliases         UniversityAlias[]
+  campuses        Campus[]
+  propertyLinks   PropertyCampus[]
+
+  @@map("universities")
+}
+
+model UniversityAlias {
+  @@schema("public")
+  id           String     @id @default(cuid())
+  universityId String
+  university   University @relation(fields: [universityId], references: [id])
+  alias        String
+  createdAt    DateTime   @default(now())
+
+  @@unique([universityId, alias])
+  @@map("university_aliases")
+}
+
+model Campus {
+  @@schema("public")
+  id                    String              @id @default(cuid())
+  universityId          String
+  university            University          @relation(fields: [universityId], references: [id])
+  name                  String
+  slug                  String
+  campusStatus          String?             @default("Verification Required")
+  latitude              Float?
+  longitude             Float?
+  sourceStatus          SourceStatus        @default(SOURCE_SUPPLIED)
+  verificationStatus    VerificationStatus  @default(UNVERIFIED)
+  sourceFile            String?
+  sourceRecordReference String?
+  sourceUrl             String?
+  verifiedAt            DateTime?
+  verifiedBy            String?
+  confidenceLevel       ConfidenceLevel     @default(LOW)
+  conflictStatus        ConflictStatus      @default(NONE)
+  publicationStatus     PublicationStatus  @default(DRAFT)
+  notes                 String?
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+
+  campusEstates   CampusEstate[]
+  propertyLinks   PropertyCampus[]
+
+  @@unique([universityId, slug])
+  @@map("campuses")
+}
+
+model CampusEstate {
+  @@schema("public")
+  id        String   @id @default(cuid())
+  campusId  String
+  campus    Campus   @relation(fields: [campusId], references: [id])
+  estateId  String
+  estate    Estate   @relation(fields: [estateId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@unique([campusId, estateId])
+  @@map("campus_estates")
+}
+
+model PointOfInterest {
+  @@schema("public")
+  id                    String              @id @default(cuid())
+  category              String // supermarket | hospital | pharmacy | bank | police_station | church | etc.
+  name                  String
+  latitude              Float?
+  longitude             Float?
+  sourceStatus          SourceStatus        @default(SOURCE_SUPPLIED)
+  verificationStatus    VerificationStatus  @default(UNVERIFIED)
+  sourceFile            String?
+  sourceRecordReference String?
+  sourceUrl             String?
+  verifiedAt            DateTime?
+  verifiedBy            String?
+  confidenceLevel       ConfidenceLevel     @default(LOW)
+  conflictStatus        ConflictStatus      @default(NONE)
+  publicationStatus     PublicationStatus  @default(DRAFT)
+  notes                 String?
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+
+  @@map("points_of_interest")
+}
+
+model TransportStop {
+  @@schema("public")
+  id                    String              @id @default(cuid())
+  name                  String
+  mode                  String? // matatu | bus | boda | Information Required
+  latitude              Float?
+  longitude             Float?
+  sourceStatus          SourceStatus        @default(SOURCE_SUPPLIED)
+  verificationStatus    VerificationStatus  @default(UNVERIFIED)
+  sourceFile            String?
+  sourceRecordReference String?
+  sourceUrl             String?
+  verifiedAt            DateTime?
+  verifiedBy            String?
+  confidenceLevel       ConfidenceLevel     @default(LOW)
+  conflictStatus        ConflictStatus      @default(NONE)
+  publicationStatus     PublicationStatus  @default(DRAFT)
+  notes                 String?
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+
+  @@map("transport_stops")
+}
+
+model InternetProvider {
+  @@schema("public")
+  id                 String   @id @default(cuid())
+  name               String   @unique
+  technology         String? // fibre | wireless | satellite | Information Required
+  createdAt          DateTime @default(now())
+
+  propertyLinks PropertyUtility[]
+
+  @@map("internet_providers")
+}
+
+model SourceRecord {
+  @@schema("public")
+  id           String   @id @default(cuid())
+  sourceFile   String
+  entityType   String
+  entityId     String?
+  rawExcerpt   String?
+  importBatch  String?
+  createdAt    DateTime @default(now())
+
+  verificationEvents VerificationEvent[]
+
+  @@index([entityType, entityId])
+  @@map("source_records")
+}
+
+model VerificationEvent {
+  @@schema("public")
+  id             String    @id @default(cuid())
+  sourceRecordId String?
+  sourceRecord   SourceRecord? @relation(fields: [sourceRecordId], references: [id])
+  entityType     String
+  entityId       String
+  previousStatus VerificationStatus
+  newStatus      VerificationStatus
+  method         String? // documentary | field_visit | phone_call | maps_recalculation
+  performedBy    String?
+  evidenceUrl    String?
+  notes          String?
+  createdAt      DateTime  @default(now())
+
+  @@index([entityType, entityId])
+  @@map("verification_events")
+}
+
+// ============================================================================
+// IDENTITY AND ORGANISATIONS
+// ============================================================================
+
+model User {
+  @@schema("public")
+  id            String            @id @default(cuid())
+  email         String?           @unique
+  phone         String?           @unique
+  passwordHash  String?
+  emailVerified Boolean           @default(false)
+  phoneVerified Boolean           @default(false)
+  status        UserAccountStatus @default(PENDING_VERIFICATION)
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  profile             UserProfile?
+  sessions             UserSession[]
+  devices               UserDevice[]
+  roles                 UserRole[]
+  organisationMemberships OrganisationMember[]
+  managerProfile        ManagerProfile?
+  identityDocuments     IdentityDocument[]
+  payoutAccounts        PayoutAccount[]
+  bookings              Booking[]
+  favourites            Favourite[]
+  savedSearches         SavedSearch[]
+  reviews               Review[]
+  supportTickets        SupportTicket[]
+  notifications         Notification[]
+  auditLogs             AuditLog[]
+
+  @@map("users")
+}
+
+model UserProfile {
+  @@schema("public")
+  id               String   @id @default(cuid())
+  userId           String   @unique
+  user             User     @relation(fields: [userId], references: [id])
+  firstName        String?
+  lastName         String?
+  avatarUrl        String?
+  studentIdVerified Boolean @default(false)
+  institutionName  String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@map("user_profiles")
+}
+
+model UserSession {
+  @@schema("public")
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id])
+  refreshToken String   @unique
+  ipAddress    String?
+  userAgent    String?
+  expiresAt    DateTime
+  revokedAt    DateTime?
+  createdAt    DateTime @default(now())
+
+  @@map("user_sessions")
+}
+
+model UserDevice {
+  @@schema("public")
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  deviceName String?
+  pushToken  String?
+  lastSeenAt DateTime?
+  createdAt  DateTime @default(now())
+
+  @@map("user_devices")
+}
+
+model Role {
+  @@schema("public")
+  id          String       @id @default(cuid())
+  name        String       @unique // Owner | Manager | Accountant | Receptionist | Maintenance | Analyst | Admin | Tenant
+  description String?
+  permissions RolePermission[]
+  userRoles   UserRole[]
+
+  @@map("roles")
+}
+
+model Permission {
+  @@schema("public")
+  id    String @id @default(cuid())
+  key   String @unique // e.g. properties.write, bookings.refund
+  roles RolePermission[]
+
+  @@map("permissions")
+}
+
+model RolePermission {
+  @@schema("public")
+  roleId       String
+  role         Role       @relation(fields: [roleId], references: [id])
+  permissionId String
+  permission   Permission @relation(fields: [permissionId], references: [id])
+
+  @@id([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+model UserRole {
+  @@schema("public")
+  id             String       @id @default(cuid())
+  userId         String
+  user           User         @relation(fields: [userId], references: [id])
+  roleId         String
+  role           Role         @relation(fields: [roleId], references: [id])
+  organisationId String?
+  organisation   Organisation? @relation(fields: [organisationId], references: [id])
+  createdAt      DateTime     @default(now())
+
+  @@unique([userId, roleId, organisationId])
+  @@map("user_roles")
+}
+
+model Organisation {
+  @@schema("public")
+  id           String    @id @default(cuid())
+  name         String
+  registrationNumber String?
+  kraPin       String?
+  status       String    @default("PENDING_VERIFICATION")
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  members      OrganisationMember[]
+  properties   Property[]
+  userRoles    UserRole[]
+  payoutAccounts PayoutAccount[]
+
+  @@map("organisations")
+}
+
+model OrganisationMember {
+  @@schema("public")
+  id             String       @id @default(cuid())
+  organisationId String
+  organisation   Organisation @relation(fields: [organisationId], references: [id])
+  userId         String
+  user           User         @relation(fields: [userId], references: [id])
+  title          String?
+  createdAt      DateTime     @default(now())
+
+  @@unique([organisationId, userId])
+  @@map("organisation_members")
+}
+
+model ManagerProfile {
+  @@schema("public")
+  id             String   @id @default(cuid())
+  userId         String   @unique
+  user           User     @relation(fields: [userId], references: [id])
+  displayName    String?
+  supportPhone   String?
+  supportWhatsapp String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@map("manager_profiles")
+}
+
+model IdentityDocument {
+  @@schema("public")
+  id               String    @id @default(cuid())
+  userId           String
+  user             User      @relation(fields: [userId], references: [id])
+  documentType     String // national_id | passport | kra_pin
+  storageKey       String // private signed-URL object key, never a public path
+  verificationCaseId String?
+  verificationCase VerificationCase? @relation(fields: [verificationCaseId], references: [id])
+  createdAt        DateTime  @default(now())
+
+  @@map("identity_documents")
+}
+
+model VerificationCase {
+  @@schema("public")
+  id          String    @id @default(cuid())
+  subjectType String // user | organisation | property
+  subjectId   String
+  status      VerificationStatus @default(PENDING)
+  assignedTo  String?
+  resolvedAt  DateTime?
+  notes       String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  identityDocuments IdentityDocument[]
+
+  @@index([subjectType, subjectId])
+  @@map("verification_cases")
+}
+
+model PayoutAccount {
+  @@schema("public")
+  id             String        @id @default(cuid())
+  organisationId String?
+  organisation   Organisation? @relation(fields: [organisationId], references: [id])
+  userId         String?
+  user           User?         @relation(fields: [userId], references: [id])
+  method         String // mpesa_paybill | bank_account
+  maskedDetails  String // last-4 only, never full account number
+  verified       Boolean       @default(false)
+  createdAt      DateTime      @default(now())
+
+  payouts Payout[]
+
+  @@map("payout_accounts")
+}
+
+// ============================================================================
+// PROPERTY INVENTORY
+// ============================================================================
+
+model Property {
+  @@schema("public")
+  id                    String              @id @default(cuid())
+  organisationId        String
+  organisation          Organisation        @relation(fields: [organisationId], references: [id])
+  countyId              String
+  county                County              @relation(fields: [countyId], references: [id])
+  townId                String?
+  town                  Town?               @relation(fields: [townId], references: [id])
+  estateId              String?
+  estate                Estate?             @relation(fields: [estateId], references: [id])
+  categoryId            String?
+  category              PropertyCategory?   @relation(fields: [categoryId], references: [id])
+  title                 String
+  slug                  String              @unique
+  publicReference        String              @unique
+  description           String?
+  address               String?
+  publicLat             Float? // privacy-safe, jittered public map location
+  publicLng             Float?
+  privateLat            Float? // exact GPS — never exposed via public API
+  privateLng            Float?
+  sourceStatus          SourceStatus        @default(SOURCE_SUPPLIED)
+  verificationStatus    VerificationStatus  @default(UNVERIFIED)
+  sourceFile            String?
+  sourceRecordReference String?
+  sourceUrl             String?
+  verifiedAt            DateTime?
+  verifiedBy            String?
+  confidenceLevel       ConfidenceLevel     @default(LOW)
+  conflictStatus        ConflictStatus      @default(NONE)
+  publicationStatus     PublicationStatus  @default(DRAFT)
+  notes                 String?
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+
+  buildings           Building[]
+  units               Unit[]
+  media               Media[]
+  floorPlans          FloorPlan[]
+  virtualTours        VirtualTour[]
+  propertyCampuses    PropertyCampus[]
+  propertyAmenities   PropertyAmenity[]
+  propertyUtilities   PropertyUtility[]
+  availabilityPeriods AvailabilityPeriod[]
+  listingVersions     ListingVersion[]
+  verificationBadges  ListingVerificationBadge[]
+  listingReports      ListingReport[]
+  pricingRules        PricingRule[]
+  deposits            Deposit[]
+  fees                Fee[]
+  houseRules          HouseRule[]
+  reviews             Review[]
+  favourites          Favourite[]
+  maintenanceRequests MaintenanceRequest[]
+
+  @@index([countyId])
+  @@index([estateId])
+  @@map("properties")
+}
+
+model Building {
+  @@schema("public")
+  id        String   @id @default(cuid())
+  propertyId String
+  property  Property @relation(fields: [propertyId], references: [id])
+  name      String?
+  floors    Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  units Unit[]
+
+  @@map("buildings")
+}
+
+model Unit {
+  @@schema("public")
+  id                    String              @id @default(cuid())
+  propertyId            String
+  property              Property            @relation(fields: [propertyId], references: [id])
+  buildingId            String?
+  building              Building?           @relation(fields: [buildingId], references: [id])
+  categoryId            String?
+  category              UnitCategory?       @relation(fields: [categoryId], references: [id])
+  publicLabel           String? // e.g. "Studio A" — never an exact private unit number
+  bedrooms              Int?
+  bathrooms             Int?
+  furnished             Boolean?
+  sourceStatus          SourceStatus        @default(SOURCE_SUPPLIED)
+  verificationStatus    VerificationStatus  @default(UNVERIFIED)
+  publicationStatus     PublicationStatus  @default(DRAFT)
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+
+  bedsOrSpaces   BedOrSpace[]
+  unitAmenities  UnitAmenity[]
+  pricingRules   PricingRule[]
+  bookingQuotes  BookingQuote[]
+  bookings       Booking[]
+
+  @@map("units")
+}
+
+model BedOrSpace {
+  @@schema("public")
+  id        String   @id @default(cuid())
+  unitId    String
+  unit      Unit     @relation(fields: [unitId], references: [id])
+  label     String? // e.g. "Bed 1" — for shared rooms/hostels
+  isVacant  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  @@map("beds_or_spaces")
+}
+
+model PropertyCategory {
+  @@schema("public")
+  id   String @id @default(cuid())
+  key  String @unique // house | hostel | student_residence | bedsitter | studio | shared_room | private_room | 1br | 2br | 3br | maisonette | serviced_apartment
+  name String
+
+  properties Property[]
+
+  @@map("property_categories")
+}
+
+model UnitCategory {
+  @@schema("public")
+  id   String @id @default(cuid())
+  key  String @unique
+  name String
+
+  units Unit[]
+
+  @@map("unit_categories")
+}
+
+model Amenity {
+  @@schema("public")
+  id   String @id @default(cuid())
+  key  String @unique // kitchen | hot_shower | balcony | gym | swimming_pool | rooftop | garden | study_area | parking | wardrobes
+  name String
+
+  propertyAmenities PropertyAmenity[]
+  unitAmenities     UnitAmenity[]
+
+  @@map("amenities")
+}
+
+model PropertyAmenity {
+  @@schema("public")
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id])
+  amenityId  String
+  amenity    Amenity  @relation(fields: [amenityId], references: [id])
+  detail     String?
+
+  @@id([propertyId, amenityId])
+  @@map("property_amenities")
+}
+
+model UnitAmenity {
+  @@schema("public")
+  unitId    String
+  unit      Unit    @relation(fields: [unitId], references: [id])
+  amenityId String
+  amenity   Amenity @relation(fields: [amenityId], references: [id])
+  detail    String?
+
+  @@id([unitId, amenityId])
+  @@map("unit_amenities")
+}
+
+model Utility {
+  @@schema("public")
+  id   String @id @default(cuid())
+  key  String @unique // water | electricity | fibre_internet | wifi | borehole | solar | backup_generator | laundry | garbage_collection
+  name String
+
+  propertyUtilities PropertyUtility[]
+
+  @@map("utilities")
+}
+
+model PropertyUtility {
+  @@schema("public")
+  propertyId         String
+  property           Property          @relation(fields: [propertyId], references: [id])
+  utilityId          String
+  utility            Utility           @relation(fields: [utilityId], references: [id])
+  internetProviderId String?
+  internetProvider   InternetProvider? @relation(fields: [internetProviderId], references: [id])
+  detail             String?
+  chargeAmount        Decimal?          @db.Decimal(10, 2)
+  chargeBasis          String? // flat | metered | included_in_rent
+
+  @@id([propertyId, utilityId])
+  @@map("property_utilities")
+}
+
+model Media {
+  @@schema("public")
+  id           String   @id @default(cuid())
+  propertyId   String
+  property     Property @relation(fields: [propertyId], references: [id])
+  type         String // image | video
+  category     String? // exterior | interior | bedroom | kitchen | bathroom | living_room | compound | parking | street_view
+  storageKey   String
+  altText      String?
+  processedAt  DateTime?
+  createdAt    DateTime @default(now())
+
+  @@map("media")
+}
+
+model FloorPlan {
+  @@schema("public")
+  id         String   @id @default(cuid())
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id])
+  storageKey String
+  createdAt  DateTime @default(now())
+
+  @@map("floor_plans")
+}
+
+model VirtualTour {
+  @@schema("public")
+  id         String   @id @default(cuid())
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id])
+  provider   String?
+  url        String?
+  createdAt  DateTime @default(now())
+
+  @@map("virtual_tours")
+}
+
+model PropertyCampus {
+  @@schema("public")
+  id                String     @id @default(cuid())
+  propertyId        String
+  property          Property   @relation(fields: [propertyId], references: [id])
+  campusId          String
+  campus            Campus     @relation(fields: [campusId], references: [id])
+  universityId       String
+  university         University @relation(fields: [universityId], references: [id])
+  straightLineKm     Float?
+  walkingMinutes     Int?
+  drivingMinutes     Int?
+  publicTransportMinutes Int?
+  distanceSource     String?    @default("SOURCE_SUPPLIED") // recalculated via maps service in later milestone
+  distanceVerifiedAt DateTime?
+
+  @@unique([propertyId, campusId])
+  @@map("property_campuses")
+}
+
+model AvailabilityPeriod {
+  @@schema("public")
+  id                    String              @id @default(cuid())
+  propertyId            String
+  property              Property            @relation(fields: [propertyId], references: [id])
+  availableFrom         DateTime?
+  availableUnitCount    Int?
+  sourceStatus          SourceStatus        @default(SOURCE_SUPPLIED)
+  verificationStatus    VerificationStatus  @default(EXPIRED) // treat availability as expired until reconfirmed
+  lastConfirmedAt       DateTime?
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+
+  snapshots AvailabilitySnapshot[]
+
+  @@map("availability_periods")
+}
+
+model AvailabilitySnapshot {
+  @@schema("public")
+  id                    String   @id @default(cuid())
+  availabilityPeriodId  String
+  availabilityPeriod    AvailabilityPeriod @relation(fields: [availabilityPeriodId], references: [id])
+  capturedAt            DateTime @default(now())
+  availableUnitCount    Int?
+
+  @@map("availability_snapshots")
+}
+
+model ListingVersion {
+  @@schema("public")
+  id         String   @id @default(cuid())
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id])
+  versionNumber Int
+  snapshotJson  Json
+  createdAt  DateTime @default(now())
+  createdBy  String?
+
+  @@unique([propertyId, versionNumber])
+  @@map("listing_versions")
+}
+
+model ListingVerificationBadge {
+  @@schema("public")
+  id           String              @id @default(cuid())
+  propertyId   String
+  property     Property            @relation(fields: [propertyId], references: [id])
+  badgeType    String // identity_verified | field_visit_verified | payment_verified | photos_verified
+  status       VerificationStatus  @default(UNVERIFIED)
+  issuedAt     DateTime?
+  expiresAt    DateTime?
+
+  @@map("listing_verification_badges")
+}
+
+model ListingReport {
+  @@schema("public")
+  id         String   @id @default(cuid())
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id])
+  reporterId String?
+  reason     String
+  details    String?
+  status     String   @default("OPEN")
+  createdAt  DateTime @default(now())
+
+  @@map("listing_reports")
+}
+
+// ============================================================================
+// COMMERCIAL TERMS
+// ============================================================================
+
+model PricingRule {
+  @@schema("public")
+  id         String   @id @default(cuid())
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id])
+  unitId     String?
+  unit       Unit?    @relation(fields: [unitId], references: [id])
+  rentAmountMin Decimal @db.Decimal(10, 2)
+  rentAmountMax Decimal? @db.Decimal(10, 2)
+  currency   String   @default("KES")
+  effectiveFrom DateTime @default(now())
+  effectiveTo   DateTime?
+  createdAt  DateTime @default(now())
+
+  @@map("pricing_rules")
+}
+
+model Deposit {
+  @@schema("public")
+  id         String   @id @default(cuid())
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id])
+  amount     Decimal? @db.Decimal(10, 2)
+  basis      String? // e.g. "1 month rent", "2 months rent"
+  refundPolicyDays Int?
+
+  @@map("deposits")
+}
+
+model Fee {
+  @@schema("public")
+  id         String   @id @default(cuid())
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id])
+  feeType    String // booking_fee | agency_fee | service_charge | parking_charge | other
+  amount     Decimal? @db.Decimal(10, 2)
+  basis      String?
+
+  @@map("fees")
+}
+
+model CancellationPolicy {
+  @@schema("public")
+  id          String @id @default(cuid())
+  key         String @unique
+  name        String
+  description String?
+
+  @@map("cancellation_policies")
+}
+
+model HouseRule {
+  @@schema("public")
+  id         String   @id @default(cuid())
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id])
+  ruleType   String // lease_duration | notice_period | visitor_policy | curfew | pets | cooking | noise
+  detail     String?
+
+  @@map("house_rules")
+}
+
+model TenancyTemplate {
+  @@schema("public")
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+
+  versions TenancyTemplateVersion[]
+
+  @@map("tenancy_templates")
+}
+
+model TenancyTemplateVersion {
+  @@schema("public")
+  id         String          @id @default(cuid())
+  templateId String
+  template   TenancyTemplate @relation(fields: [templateId], references: [id])
+  version    Int
+  bodyMarkdown String
+  createdAt  DateTime        @default(now())
+
+  @@unique([templateId, version])
+  @@map("tenancy_template_versions")
+}
+
+// ============================================================================
+// BOOKING AND PAYMENTS
+// ============================================================================
+
+model BookingQuote {
+  @@schema("public")
+  id        String   @id @default(cuid())
+  unitId    String
+  unit      Unit     @relation(fields: [unitId], references: [id])
+  userId    String?
+  moveInDate DateTime?
+  quotedRent Decimal @db.Decimal(10, 2)
+  quotedDeposit Decimal? @db.Decimal(10, 2)
+  quotedFees   Decimal? @db.Decimal(10, 2)
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+
+  holds BookingHold[]
+
+  @@map("booking_quotes")
+}
+
+model BookingHold {
+  @@schema("public")
+  id             String       @id @default(cuid())
+  bookingQuoteId String
+  bookingQuote   BookingQuote @relation(fields: [bookingQuoteId], references: [id])
+  lockKey        String       @unique // Redis lock reference for double-booking prevention
+  expiresAt      DateTime
+  createdAt      DateTime     @default(now())
+
+  @@map("booking_holds")
+}
+
+model Booking {
+  @@schema("public")
+  id          String        @id @default(cuid())
+  unitId      String
+  unit        Unit          @relation(fields: [unitId], references: [id])
+  userId      String
+  user        User          @relation(fields: [userId], references: [id])
+  status      BookingStatus @default(QUOTE)
+  moveInDate  DateTime?
+  agreedRent  Decimal       @db.Decimal(10, 2)
+  agreedDeposit Decimal?    @db.Decimal(10, 2)
+  policySnapshotJson Json? // frozen at confirmation — managers cannot retroactively edit
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  guests       BookingGuest[]
+  installments BookingInstallment[]
+  payments     Payment[]
+  agreements   Agreement[]
+  reviews      Review[]
+
+  @@map("bookings")
+}
+
+model BookingGuest {
+  @@schema("public")
+  id        String  @id @default(cuid())
+  bookingId String
+  booking   Booking @relation(fields: [bookingId], references: [id])
+  fullName  String
+  phone     String?
+
+  @@map("booking_guests")
+}
+
+model BookingInstallment {
+  @@schema("public")
+  id         String    @id @default(cuid())
+  bookingId  String
+  booking    Booking   @relation(fields: [bookingId], references: [id])
+  sequence   Int
+  amountDue  Decimal   @db.Decimal(10, 2)
+  dueDate    DateTime
+  paidAt     DateTime?
+
+  @@unique([bookingId, sequence])
+  @@map("booking_installments")
+}
+
+model Payment {
+  @@schema("public")
+  id         String        @id @default(cuid())
+  bookingId  String
+  booking    Booking       @relation(fields: [bookingId], references: [id])
+  provider   PaymentProvider
+  status     PaymentStatus @default(INITIATED)
+  amount     Decimal       @db.Decimal(10, 2)
+  currency   String        @default("KES")
+  idempotencyKey String    @unique
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+
+  attempts    PaymentAttempt[]
+  callbacks   PaymentCallback[]
+  allocations PaymentAllocation[]
+  refunds     Refund[]
+  chargebacks Chargeback[]
+  receipts    Receipt[]
+
+  @@map("payments")
+}
+
+model PaymentAttempt {
+  @@schema("public")
+  id         String   @id @default(cuid())
+  paymentId  String
+  payment    Payment  @relation(fields: [paymentId], references: [id])
+  providerRef String?
+  status     PaymentStatus
+  rawResponseJson Json?
+  createdAt  DateTime @default(now())
+
+  @@map("payment_attempts")
+}
+
+model PaymentCallback {
+  @@schema("public")
+  id             String   @id @default(cuid())
+  paymentId      String
+  payment        Payment  @relation(fields: [paymentId], references: [id])
+  providerRef    String?
+  signatureValid Boolean  @default(false)
+  rawPayloadJson Json
+  receivedAt     DateTime @default(now())
+
+  @@unique([providerRef])
+  @@map("payment_callbacks")
+}
+
+model PaymentAllocation {
+  @@schema("public")
+  id         String   @id @default(cuid())
+  paymentId  String
+  payment    Payment  @relation(fields: [paymentId], references: [id])
+  allocationType String // rent | deposit | booking_fee | agency_fee
+  amount     Decimal  @db.Decimal(10, 2)
+
+  @@map("payment_allocations")
+}
+
+model Refund {
+  @@schema("public")
+  id         String   @id @default(cuid())
+  paymentId  String
+  payment    Payment  @relation(fields: [paymentId], references: [id])
+  amount     Decimal  @db.Decimal(10, 2)
+  reason     String?
+  requiresDualControl Boolean @default(false)
+  requestedBy String?
+  approvedBy String?
+  createdAt  DateTime @default(now())
+
+  @@map("refunds")
+}
+
+model Chargeback {
+  @@schema("public")
+  id        String   @id @default(cuid())
+  paymentId String
+  payment   Payment  @relation(fields: [paymentId], references: [id])
+  reason    String?
+  status    String   @default("OPEN")
+  createdAt DateTime @default(now())
+
+  @@map("chargebacks")
+}
+
+model Receipt {
+  @@schema("public")
+  id        String   @id @default(cuid())
+  paymentId String
+  payment   Payment  @relation(fields: [paymentId], references: [id])
+  storageKey String?
+  createdAt DateTime @default(now())
+
+  @@map("receipts")
+}
+
+model Payout {
+  @@schema("public")
+  id              String        @id @default(cuid())
+  payoutAccountId String
+  payoutAccount   PayoutAccount @relation(fields: [payoutAccountId], references: [id])
+  amount          Decimal       @db.Decimal(10, 2)
+  status          String        @default("PENDING")
+  requiresDualControl Boolean   @default(false)
+  createdAt       DateTime      @default(now())
+
+  @@map("payouts")
+}
+
+model LedgerAccount {
+  @@schema("public")
+  id       String @id @default(cuid())
+  name     String @unique
+  type     String // asset | liability | revenue | expense
+
+  entries LedgerEntry[]
+
+  @@map("ledger_accounts")
+}
+
+model LedgerEntry {
+  @@schema("public")
+  id              String        @id @default(cuid())
+  ledgerAccountId String
+  ledgerAccount   LedgerAccount @relation(fields: [ledgerAccountId], references: [id])
+  debit           Decimal?      @db.Decimal(10, 2)
+  credit          Decimal?      @db.Decimal(10, 2)
+  referenceType   String? // payment | refund | payout
+  referenceId     String?
+  createdAt       DateTime      @default(now())
+
+  @@map("ledger_entries")
+}
+
+model ReconciliationRun {
+  @@schema("public")
+  id          String   @id @default(cuid())
+  provider    PaymentProvider
+  runDate     DateTime
+  matchedCount Int     @default(0)
+  unmatchedCount Int   @default(0)
+  createdAt   DateTime @default(now())
+
+  @@map("reconciliation_runs")
+}
+
+// ============================================================================
+// AGREEMENTS
+// ============================================================================
+
+model Agreement {
+  @@schema("public")
+  id         String          @id @default(cuid())
+  bookingId  String
+  booking    Booking         @relation(fields: [bookingId], references: [id])
+  templateVersionId String?
+  status     AgreementStatus @default(DRAFT)
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+
+  versions     AgreementVersion[]
+  signatories  AgreementSignatory[]
+  signedDocuments SignedDocument[]
+
+  @@map("agreements")
+}
+
+model AgreementVersion {
+  @@schema("public")
+  id          String    @id @default(cuid())
+  agreementId String
+  agreement   Agreement @relation(fields: [agreementId], references: [id])
+  version     Int
+  documentHash String
+  bodyStorageKey String
+  createdAt   DateTime  @default(now())
+
+  @@unique([agreementId, version])
+  @@map("agreement_versions")
+}
+
+model AgreementSignatory {
+  @@schema("public")
+  id          String    @id @default(cuid())
+  agreementId String
+  agreement   Agreement @relation(fields: [agreementId], references: [id])
+  userId      String?
+  role        String // tenant | manager | witness
+  signedAt    DateTime?
+
+  signatureRequests SignatureRequest[]
+
+  @@map("agreement_signatories")
+}
+
+model SignatureRequest {
+  @@schema("public")
+  id           String              @id @default(cuid())
+  signatoryId  String
+  signatory    AgreementSignatory  @relation(fields: [signatoryId], references: [id])
+  authenticatedLinkToken String    @unique
+  expiresAt    DateTime
+  createdAt    DateTime            @default(now())
+
+  events SignatureEvent[]
+
+  @@map("signature_requests")
+}
+
+model SignatureEvent {
+  @@schema("public")
+  id                 String           @id @default(cuid())
+  signatureRequestId String
+  signatureRequest   SignatureRequest @relation(fields: [signatureRequestId], references: [id])
+  eventType          String // viewed | consented | signed
+  ipAddress          String?
+  createdAt          DateTime         @default(now())
+
+  @@map("signature_events")
+}
+
+model SignedDocument {
+  @@schema("public")
+  id          String    @id @default(cuid())
+  agreementId String
+  agreement   Agreement @relation(fields: [agreementId], references: [id])
+  storageKey  String
+  sealedAt    DateTime  @default(now())
+
+  @@map("signed_documents")
+}
+
+// ============================================================================
+// ENGAGEMENT AND OPERATIONS
+// ============================================================================
+
+model Favourite {
+  @@schema("public")
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id])
+  createdAt  DateTime @default(now())
+
+  @@unique([userId, propertyId])
+  @@map("favourites")
+}
+
+model SavedSearch {
+  @@schema("public")
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  filtersJson Json
+  createdAt  DateTime @default(now())
+
+  alerts SearchAlert[]
+
+  @@map("saved_searches")
+}
+
+model SearchAlert {
+  @@schema("public")
+  id            String      @id @default(cuid())
+  savedSearchId String
+  savedSearch   SavedSearch @relation(fields: [savedSearchId], references: [id])
+  frequency     String      @default("DAILY")
+  lastSentAt    DateTime?
+
+  @@map("search_alerts")
+}
+
+model Review {
+  @@schema("public")
+  id         String   @id @default(cuid())
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id])
+  bookingId  String   // only verified stays may review
+  booking    Booking  @relation(fields: [bookingId], references: [id])
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  overallRating Decimal @db.Decimal(2, 1)
+  createdAt  DateTime @default(now())
+
+  categories ReviewCategory[]
+  responses  ReviewResponse[]
+
+  @@map("reviews")
+}
+
+model ReviewCategory {
+  @@schema("public")
+  id       String  @id @default(cuid())
+  reviewId String
+  review   Review  @relation(fields: [reviewId], references: [id])
+  category String // accuracy | security | water | internet | cleanliness | management | value | distance
+  rating   Decimal @db.Decimal(2, 1)
+
+  @@map("review_categories")
+}
+
+model ReviewResponse {
+  @@schema("public")
+  id        String   @id @default(cuid())
+  reviewId  String
+  review    Review   @relation(fields: [reviewId], references: [id])
+  responderId String?
+  body      String
+  createdAt DateTime @default(now())
+
+  @@map("review_responses")
+}
+
+// Renting tips / student housing guides / moving guides / tenant rights
+// articles. Reuses PublicationStatus rather than a new enum: a draft is
+// never publicly listed or fetchable by slug, same rule the Property and
+// University models already enforce (see BlogService).
+model BlogPost {
+  @@schema("public")
+  id                String            @id @default(cuid())
+  title             String
+  slug              String            @unique
+  excerpt           String
+  body              String
+  coverImageUrl     String?
+  authorName        String
+  category          String? // e.g. "Renting tips", "Moving guides", "Tenant rights"
+  publicationStatus PublicationStatus @default(DRAFT)
+  publishedAt       DateTime?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  @@index([publicationStatus, publishedAt])
+  @@map("blog_posts")
+}
+
+model SupportTicket {
+  @@schema("public")
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  priority  String   @default("P4") // P0-P4 per Part L
+  status    String   @default("OPEN")
+  subject   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  messages SupportMessage[]
+
+  @@map("support_tickets")
+}
+
+model SupportMessage {
+  @@schema("public")
+  id       String        @id @default(cuid())
+  ticketId String
+  ticket   SupportTicket @relation(fields: [ticketId], references: [id])
+  authorId String?
+  body     String
+  createdAt DateTime     @default(now())
+
+  @@map("support_messages")
+}
+
+model MaintenanceRequest {
+  @@schema("public")
+  id         String   @id @default(cuid())
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id])
+  reportedBy String?
+  description String
+  status     String   @default("OPEN")
+  createdAt  DateTime @default(now())
+
+  @@map("maintenance_requests")
+}
+
+model Notification {
+  @@schema("public")
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  channel   String // email | sms | in_app | whatsapp
+  type      String // booking | payment | receipt | agreement | move_in | instalment_reminder | cancellation | refund | support_status
+  payloadJson Json?
+  sentAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@map("notifications")
+}
+
+model NotificationPreference {
+  @@schema("public")
+  id       String  @id @default(cuid())
+  userId   String  @unique
+  emailOptIn Boolean @default(true)
+  smsOptIn   Boolean @default(true)
+  whatsappOptIn Boolean @default(false)
+
+  @@map("notification_preferences")
+}
+
+model AuditLog {
+  @@schema("public")
+  id         String   @id @default(cuid())
+  actorId    String?
+  actor      User?    @relation(fields: [actorId], references: [id])
+  action     String
+  entityType String?
+  entityId   String?
+  metadataJson Json?
+  createdAt  DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@map("audit_logs")
+}
+
+model SecurityEvent {
+  @@schema("public")
+  id        String   @id @default(cuid())
+  eventType String // failed_login | mfa_challenge | rate_limit_block | suspicious_upload
+  userId    String?
+  ipAddress String?
+  metadataJson Json?
+  createdAt DateTime @default(now())
+
+  @@map("security_events")
+}
+
+model AdminNote {
+  @@schema("public")
+  id         String   @id @default(cuid())
+  subjectType String
+  subjectId   String
+  authorId    String?
+  body        String
+  createdAt   DateTime @default(now())
+
+  @@index([subjectType, subjectId])
+  @@map("admin_notes")
+}
+
+// ============================================================================
+// STAGING SCHEMA — raw source-data import
+// See docs/data-quality/source-import-staging-design.md
+//
+// Nothing in this group is ever read by apps/web or any public API route.
+// Only internal ETL jobs (packages/database/src/staging/*) and the future
+// administrator "data-quality queue" (Part K) read from it. Promotion to the
+// canonical `public` schema tables above is a separate, explicit, logged step
+// — never automatic.
+// ============================================================================
+
+model RawImportBatch {
+  id           String   @id @default(cuid())
+  batchKey     String   @unique // e.g. "nairobi-phase1-milestone2-audit"
+  checksum     String   // sha256 of the manifest + all referenced raw text files
+  county       String?
+  importedBy   String?
+  createdAt    DateTime @default(now())
+
+  propertyRecords   RawPropertyRecord[]
+  universityRecords RawUniversityRecord[]
+  fieldIssues       RawFieldIssue[]
+
+  @@schema("staging")
+  @@map("raw_import_batches")
+}
+
+model RawPropertyRecord {
+  id                    String          @id @default(cuid())
+  batchId               String
+  batch                 RawImportBatch  @relation(fields: [batchId], references: [id])
+  propertyName           String
+  universityName          String? // as supplied, not yet resolved to a canonical University row
+  sourceFile             String?
+  rawText                 String          // verbatim text preserved from the source document
+  conflictStatus          String          @default("NONE") // NONE | FLAGGED | UNDER_REVIEW | RESOLVED
+  promotedPropertyId      String? // set once/if promoted to public.properties
+  createdAt               DateTime        @default(now())
+
+  @@index([propertyName])
+  @@schema("staging")
+  @@map("raw_property_records")
+}
+
+model RawUniversityRecord {
+  id                  String         @id @default(cuid())
+  batchId             String
+  batch               RawImportBatch @relation(fields: [batchId], references: [id])
+  universityName      String
+  campusName          String?
+  sourceFile          String?
+  rawExcerpt          String?
+  promotedUniversityId String? // set once/if promoted to public.universities
+  createdAt           DateTime       @default(now())
+
+  @@index([universityName])
+  @@schema("staging")
+  @@map("raw_university_records")
+}
+
+model RawFieldIssue {
+  id           String         @id @default(cuid())
+  batchId      String
+  batch        RawImportBatch @relation(fields: [batchId], references: [id])
+  recordType   String // property | university
+  recordRef    String // propertyName or universityName as supplied
+  issue        String
+  createdAt    DateTime       @default(now())
+
+  @@schema("staging")
+  @@map("raw_field_issues")
+}

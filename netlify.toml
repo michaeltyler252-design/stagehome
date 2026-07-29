@@ -1,0 +1,29 @@
+# Netlify configuration for the Next.js web app in this pnpm monorepo.
+#
+# "base" tells Netlify which subdirectory to treat as the site root for
+# build purposes (the repo is still checked out in full, so pnpm can still
+# find pnpm-workspace.yaml above this directory and resolve the workspace
+# correctly).
+[build]
+  base = "apps/web"
+  command = "pnpm install --no-frozen-lockfile && pnpm build"
+
+  # IMPORTANT: do NOT set `publish` here. @netlify/plugin-nextjs (v5, the
+  # "Next.js Runtime") configures the publish directory itself during the
+  # build — it does not simply serve the raw `.next` folder as a static
+  # site, it wires up SSR/ISR/API-route handling behind the scenes. An
+  # earlier version of this file set `publish = ".next"`, which conflicted
+  # with the plugin's own path resolution (interacting badly with `base`)
+  # and caused Netlify to silently fall back to publishing the repository
+  # root — exactly the "publish directory incorrectly set to the project
+  # root" failure. Leave this unset and let the plugin manage it.
+
+[build.environment]
+  NODE_VERSION = "20"
+
+# The official Next.js runtime plugin is required for correct SSR/ISR
+# support on Netlify — without it, Netlify may fall back to treating this
+# as a static export and mishandle server-rendered routes, API routes, and
+# the dynamic sitemap/robots files this app relies on.
+[[plugins]]
+  package = "@netlify/plugin-nextjs"

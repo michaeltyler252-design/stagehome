@@ -1,0 +1,8 @@
+{
+  "importBatch": "nandi-phase1-milestone1-audit",
+  "county": "Nandi",
+  "note": "Raw text preserved verbatim from a user-supplied source document. Nothing here is invented — every record is SOURCE_SUPPLIED_UNVERIFIED per Part B rules 4 and 6.",
+  "records": [
+    {"university": "Koitalel Samoei University College / Higher Colleges", "property": "Nandi Hills Elite Suites", "sourceFile": "user-supplied: Kenya Premium Rental Marketplace Knowledge Base", "rawTextFile": "raw/nandi-hills-elite-suites.txt", "knownIssues": ["The linked institution name combines two different entities ('Kaimosi Bio-Tech / Koitalel Samoei University College') in its own heading — flag for institution-identity verification specifically."]}
+  ]
+}

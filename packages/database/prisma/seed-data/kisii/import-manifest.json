@@ -1,0 +1,16 @@
+{
+  "importBatch": "kisii-phase1-milestone1-audit",
+  "county": "Kisii",
+  "note": "Raw text preserved verbatim from a new source document supplied directly by the user ('Kenya Premium Rental Marketplace Knowledge Base'), distinct from the original master document (Part O). Nothing here is invented — every record is SOURCE_SUPPLIED_UNVERIFIED per Part B rules 4 and 6. This county was previously flagged as having zero source data (see docs/data-quality/phase1-rollout-data-availability-audit.md) — that finding is now superseded for Kisii specifically, though the record supplied is itself incomplete (see knownIssues below). See docs/data-quality/kisii-institution-verification-register.md and kisii-property-verification-register.md for known issues per record.",
+  "records": [
+    {
+      "university": "Kisii University",
+      "property": "Nyabururu Academic Residency",
+      "sourceFile": "user-supplied: Kenya Premium Rental Marketplace Knowledge Base",
+      "rawTextFile": "raw/nyabururu-academic-residency.txt",
+      "knownIssues": [
+        "The supplied source text itself cuts off mid-way through the Amenities section (ends after 'Balcony'). Missing entirely from this record: the remainder of Amenities (Wardrobes, Parking, Gym, Swimming Pool, Rooftop, Garden, Study Area), Nearby Places, Tenancy Rules, Contact Details, Availability, Reviews, and Images. None of these were invented to fill the gap — they are simply absent from staging until a complete version of this record is supplied."
+      ]
+    }
+  ]
+}
