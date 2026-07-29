@@ -6,13 +6,7 @@
   },
   "deploy": {
     "startCommand": "node apps/api/dist/main.js",
-    "preDeployCommand": [
-      "pnpm --filter @student-housing/database prisma:db-push",
-      "pnpm --filter @student-housing/database prisma:seed",
-      "pnpm --filter @student-housing/database seed:blog",
-      "NODE_ENV=development pnpm --filter @student-housing/database dev:promote-and-verify-universities",
-      "NODE_ENV=development pnpm --filter @student-housing/database dev:seed-search-data"
-    ],
+    "preDeployCommand": "pnpm --filter @student-housing/database prisma:db-push && pnpm --filter @student-housing/database prisma:seed && pnpm --filter @student-housing/database seed:blog",
     "healthcheckPath": "/api/v1/health",
     "healthcheckTimeout": 120,
     "restartPolicyType": "ON_FAILURE"
