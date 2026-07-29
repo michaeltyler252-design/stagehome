@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
 } from "@nestjs/common";
 import { randomUUID } from "node:crypto";
@@ -15,6 +16,8 @@ const LARGE_REFUND_THRESHOLD = 50000; // KES — above this, dual control is req
 
 @Injectable()
 export class PaymentsService {
+  private readonly logger = new Logger(PaymentsService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly daraja: DarajaClient,
@@ -140,15 +143,13 @@ export class PaymentsService {
     });
     if (!attempt) {
       // A callback for a checkout request we never initiated (or already
-      // cleaned up) — record it for the audit trail but there is nothing
-      // safe to do with it.
-      await this.prisma.paymentCallback.create({
-        data: {
-          providerRef: checkoutRequestId,
-          signatureValid: false,
-          rawPayloadJson: payload,
-        },
-      });
+      // cleaned up). PaymentCallback.payment is a required relation — there
+      // is no real payment to attach this to, and inventing one would be
+      // fabricating data. Log it for the audit trail instead of persisting
+      // a callback row with no payment.
+      this.logger.warn(
+        `Received a Daraja callback for an unrecognized checkout request: ${checkoutRequestId}`
+      );
       return { received: true, alreadyProcessed: false };
     }
 
