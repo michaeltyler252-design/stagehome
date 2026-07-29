@@ -44,6 +44,7 @@ COPY --from=build --chown=nestjs:nodejs /repo/package.json ./package.json
 COPY --from=build --chown=nestjs:nodejs /repo/pnpm-workspace.yaml ./pnpm-workspace.yaml
 COPY --from=build --chown=nestjs:nodejs /repo/apps/api/dist ./apps/api/dist
 COPY --from=build --chown=nestjs:nodejs /repo/apps/api/package.json ./apps/api/package.json
+COPY --from=build --chown=nestjs:nodejs /repo/apps/api/node_modules ./apps/api/node_modules
 COPY --from=build --chown=nestjs:nodejs /repo/packages/database ./packages/database
 # Note: no separate copy of packages/database/node_modules/.prisma is needed —
 # with pnpm's shared virtual store, `prisma generate` writes the client
