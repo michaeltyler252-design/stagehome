@@ -3,6 +3,7 @@
 # Build from the monorepo root: docker build -f apps/api/Dockerfile .
 
 FROM node:20-bookworm-slim AS base
+RUN apt-get update && apt-get install -y --no-install-recommends openssl ca-certificates && rm -rf /var/lib/apt/lists/*
 RUN corepack enable
 WORKDIR /repo
 
@@ -30,6 +31,7 @@ RUN pnpm build
 FROM node:20-bookworm-slim AS runtime
 ENV NODE_ENV=production
 WORKDIR /repo
+RUN apt-get update && apt-get install -y --no-install-recommends openssl ca-certificates && rm -rf /var/lib/apt/lists/*
 RUN corepack enable \
   && addgroup --system --gid 1001 nodejs \
   && adduser --system --uid 1001 --home /home/nestjs --shell /bin/sh nestjs \
