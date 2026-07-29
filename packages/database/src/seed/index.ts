@@ -122,7 +122,7 @@ async function seedCancellationPolicies() {
   console.log(`Seeded ${CANCELLATION_POLICIES.length} cancellation policy types.`);
 }
 
-async function main() {
+export async function main() {
   console.log("Seeding lookup/taxonomy data (Milestone 2 scope)...");
   await seedCounties();
   await seedPropertyCategories();

@@ -78,7 +78,7 @@ None of this replaces real legal advice for a specific situation — but knowing
   },
 ];
 
-async function main() {
+export async function main() {
   let published = 0;
   let skipped = 0;
 

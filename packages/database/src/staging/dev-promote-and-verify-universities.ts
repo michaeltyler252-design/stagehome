@@ -25,7 +25,7 @@ import { promoteOne } from "./promote-universities";
 
 const ALLOWED_ENVIRONMENTS = new Set(["development", "test"]);
 
-async function main() {
+export async function main() {
   const nodeEnv = process.env.NODE_ENV;
   if (!nodeEnv || !ALLOWED_ENVIRONMENTS.has(nodeEnv)) {
     throw new Error(

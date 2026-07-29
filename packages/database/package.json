@@ -12,6 +12,7 @@
     "prisma:studio": "prisma studio",
     "prisma:seed": "tsx src/seed/index.ts",
     "seed:blog": "tsx src/staging/seed-blog-posts.ts",
+    "bootstrap-production-data": "tsx src/staging/bootstrap-production-data.ts",
     "dev:promote-and-verify-universities": "NODE_ENV=development tsx src/staging/dev-promote-and-verify-universities.ts",
     "dev:seed-search-data": "NODE_ENV=development tsx src/staging/dev-seed-search-data.ts",
     "grant-admin-role": "tsx src/staging/grant-admin-role.ts",
