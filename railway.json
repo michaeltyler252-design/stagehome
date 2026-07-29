@@ -6,7 +6,7 @@
   },
   "deploy": {
     "startCommand": "node apps/api/dist/main.js",
-    "preDeployCommand": "pnpm --filter @student-housing/database prisma:db-push && pnpm --filter @student-housing/database prisma:seed && pnpm --filter @student-housing/database seed:blog",
+    "preDeployCommand": "pnpm --filter @student-housing/database bootstrap-production-data",
     "healthcheckPath": "/api/v1/health",
     "healthcheckTimeout": 120,
     "restartPolicyType": "ON_FAILURE"
