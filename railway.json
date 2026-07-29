@@ -5,7 +5,7 @@
     "dockerfilePath": "apps/api/Dockerfile"
   },
   "deploy": {
-    "startCommand": "node dist/main.js",
+    "startCommand": "node apps/api/dist/main.js",
     "preDeployCommand": "pnpm --filter @student-housing/database prisma:migrate:deploy && pnpm --filter @student-housing/database prisma:seed",
     "healthcheckPath": "/api/v1/health",
     "healthcheckTimeout": 120,
