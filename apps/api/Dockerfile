@@ -24,15 +24,25 @@ RUN pnpm prisma:generate
 WORKDIR /repo/apps/api
 RUN pnpm build
 
-# ---- runtime: minimal image with only what's needed to run ----
+# ---- runtime: includes the monorepo layout so preDeployCommand's
+# `pnpm --filter @student-housing/database ...` (migrate/seed) can actually
+# resolve and run against a real workspace, not just a flattened dist/ ----
 FROM node:20-bookworm-slim AS runtime
 ENV NODE_ENV=production
-WORKDIR /app
-RUN corepack enable && addgroup --system --gid 1001 nodejs && adduser --system --uid 1001 nestjs
+WORKDIR /repo
+RUN corepack enable \
+  && addgroup --system --gid 1001 nodejs \
+  && adduser --system --uid 1001 --home /home/nestjs --shell /bin/sh nestjs \
+  && mkdir -p /home/nestjs/.cache \
+  && chown -R nestjs:nodejs /home/nestjs
+ENV HOME=/home/nestjs
 
-COPY --from=build /repo/apps/api/dist ./dist
-COPY --from=build /repo/apps/api/package.json ./package.json
 COPY --from=build /repo/node_modules ./node_modules
+COPY --from=build /repo/package.json ./package.json
+COPY --from=build /repo/pnpm-workspace.yaml ./pnpm-workspace.yaml
+COPY --from=build /repo/apps/api/dist ./apps/api/dist
+COPY --from=build /repo/apps/api/package.json ./apps/api/package.json
+COPY --from=build /repo/packages/database ./packages/database
 # Note: no separate copy of packages/database/node_modules/.prisma is needed —
 # with pnpm's shared virtual store, `prisma generate` writes the client
 # straight into /repo/node_modules/.pnpm/@prisma+client@.../node_modules/.prisma,
@@ -45,4 +55,4 @@ EXPOSE 4000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
   CMD node -e "fetch('http://localhost:4000/api/v1/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
 
-CMD ["node", "dist/main.js"]
+CMD ["node", "apps/api/dist/main.js"]
