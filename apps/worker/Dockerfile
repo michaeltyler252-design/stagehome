@@ -27,7 +27,8 @@ RUN addgroup --system --gid 1001 nodejs && adduser --system --uid 1001 worker
 COPY --from=build /repo/apps/worker/dist ./dist
 COPY --from=build /repo/apps/worker/package.json ./package.json
 COPY --from=build /repo/node_modules ./node_modules
-COPY --from=build /repo/packages/database/node_modules/.prisma ./node_modules/.prisma
+# See apps/api/Dockerfile for why there's no separate copy of
+# packages/database/node_modules/.prisma here.
 
 USER worker
 # No exposed port — this process only consumes queues, it serves nothing.
