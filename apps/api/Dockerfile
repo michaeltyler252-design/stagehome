@@ -37,12 +37,12 @@ RUN corepack enable \
   && chown -R nestjs:nodejs /home/nestjs
 ENV HOME=/home/nestjs
 
-COPY --from=build /repo/node_modules ./node_modules
-COPY --from=build /repo/package.json ./package.json
-COPY --from=build /repo/pnpm-workspace.yaml ./pnpm-workspace.yaml
-COPY --from=build /repo/apps/api/dist ./apps/api/dist
-COPY --from=build /repo/apps/api/package.json ./apps/api/package.json
-COPY --from=build /repo/packages/database ./packages/database
+COPY --from=build --chown=nestjs:nodejs /repo/node_modules ./node_modules
+COPY --from=build --chown=nestjs:nodejs /repo/package.json ./package.json
+COPY --from=build --chown=nestjs:nodejs /repo/pnpm-workspace.yaml ./pnpm-workspace.yaml
+COPY --from=build --chown=nestjs:nodejs /repo/apps/api/dist ./apps/api/dist
+COPY --from=build --chown=nestjs:nodejs /repo/apps/api/package.json ./apps/api/package.json
+COPY --from=build --chown=nestjs:nodejs /repo/packages/database ./packages/database
 # Note: no separate copy of packages/database/node_modules/.prisma is needed —
 # with pnpm's shared virtual store, `prisma generate` writes the client
 # straight into /repo/node_modules/.pnpm/@prisma+client@.../node_modules/.prisma,
