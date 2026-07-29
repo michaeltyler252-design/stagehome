@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { apiClient } from "../../../lib/api-client";
 import { ReserveButton } from "../../../components/ReserveButton";
+import { FavouriteButton } from "../../../components/FavouriteButton";
 import { JsonLd } from "../../../components/JsonLd";
 import { canonicalUrl, breadcrumbJsonLd } from "../../../lib/seo";
 
@@ -205,6 +206,7 @@ export default async function PropertyDetailPage({ params }: Props) {
             {deposit ? deposit.basis ?? `${deposit.amount}` : "Information Required"}
           </p>
           <ReserveButton unitId={property.units?.[0]?.id} />
+          <FavouriteButton propertyId={property.id} />
         </aside>
       </div>
     </div>

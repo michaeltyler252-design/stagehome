@@ -286,4 +286,26 @@ export const apiClient = {
   // --- Blog ---
   listBlogPosts: () => request<any[]>("/public/blog"),
   getBlogPost: (slug: string) => request<any>(`/public/blog/${slug}`),
+
+  // --- Favourites ---
+  addFavourite: (accessToken: string, propertyId: string) =>
+    request<any>(`/properties/${propertyId}/favourite`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${accessToken}` },
+    }),
+  removeFavourite: (accessToken: string, propertyId: string) =>
+    request<any>(`/properties/${propertyId}/favourite`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${accessToken}` },
+    }),
+  listMyFavourites: (accessToken: string) =>
+    request<any[]>("/favourites/mine", {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    }),
+
+  // --- Notifications ---
+  listMyNotifications: (accessToken: string) =>
+    request<any[]>("/notifications/mine", {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    }),
 };

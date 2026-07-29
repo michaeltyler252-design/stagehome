@@ -18,6 +18,7 @@ import { SupportModule } from "./support/support.module";
 import { DashboardsModule } from "./dashboards/dashboards.module";
 import { ReviewsModule } from "./reviews/reviews.module";
 import { BlogModule } from "./blog/blog.module";
+import { FavouritesModule } from "./favourites/favourites.module";
 
 @Module({
   imports: [
@@ -39,6 +40,7 @@ import { BlogModule } from "./blog/blog.module";
     DashboardsModule,
     ReviewsModule,
     BlogModule,
+    FavouritesModule,
   ],
   controllers: [HealthController],
 })
