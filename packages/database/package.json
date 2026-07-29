@@ -8,6 +8,7 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate:dev": "prisma migrate dev",
     "prisma:migrate:deploy": "prisma migrate deploy",
+    "prisma:db-push": "prisma db push --skip-generate",
     "prisma:studio": "prisma studio",
     "prisma:seed": "tsx src/seed/index.ts",
     "dev:promote-and-verify-universities": "NODE_ENV=development tsx src/staging/dev-promote-and-verify-universities.ts",
