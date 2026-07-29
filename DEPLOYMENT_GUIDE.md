@@ -21,77 +21,55 @@ go/no-go checklist) — read both before deploying for real.
 
 ## Deploying the frontend to Vercel
 
-Connect this repository to Vercel directly — **do not** set a custom Root
-Directory in the Vercel dashboard; leave it at the repo root. The
-root-level `vercel.json` handles scoping the build to `apps/web` only.
+Connect this repository to Vercel, and in the project's **Settings →
+General → Root Directory**, set it to `apps/web`. This makes Vercel treat
+`apps/web` as the actual project root for *every* purpose — dependency
+detection, framework detection, build/install/output commands — which is
+the officially correct, most reliable way Vercel supports monorepos.
+`apps/web/vercel.json` (just `{"framework": "nextjs"}`) and
+`apps/web/.env.production` (the live backend API URL) are both already in
+place and will be picked up automatically. Leave the dashboard's Build
+Command / Install Command / Output Directory fields **un-overridden** —
+if any of them show a value from a previous attempt, clear it so Vercel's
+Next.js defaults apply.
 
-**A real error and its fix:** a Vercel deploy failed with:
-```
-sh: line 1: nest: command not found
-npm run build exited with 1
-```
+**A history of real errors hit while getting here, and their fixes** (kept
+for anyone debugging a similar monorepo setup):
+
+**Error 1:** `sh: line 1: nest: command not found` / `npm run build exited with 1`.
 **Root cause:** the repo's root `package.json` has an unscoped
 `"build": "turbo run build"` script, which builds *every* workspace
-package — including `apps/api`, whose own build script is `nest build`.
-Vercel is only supposed to build the frontend; it should never have
-touched the NestJS backend at all. Compounding this, no `pnpm-lock.yaml`
-was committed to the repo, and the previous `apps/web/vercel.json` used
-`pnpm install --frozen-lockfile` — which fails immediately with no
-lockfile present.
+package — including `apps/api`, whose own build script is `nest build`,
+which doesn't exist in a frontend-only install. This only happens if
+Vercel is building from the repo root instead of `apps/web` — another
+reason Root Directory is the right fix, not a root-level `buildCommand`
+workaround.
 
-**Fix:** the root `vercel.json` now explicitly scopes both install and
-build to `apps/web` only, using plain `npm` (not pnpm/Turborepo), since
-`apps/web` has zero internal workspace dependencies and doesn't need
-either. A `.vercelignore` also excludes `apps/api`, `apps/worker`, and
-`packages/database` from the upload entirely, so there's no path by which
-Vercel could ever discover and attempt to build the backend again.
+**Error 2:** *"No Next.js version detected."* This happens when Vercel's
+Next.js version-detection step inspects `package.json` at the repo root
+instead of `apps/web` — the repo root's `package.json` only orchestrates
+the monorepo via Turborepo and never declared `next` as a dependency.
+Again, a symptom of Root Directory not being set to `apps/web`.
 
-**A third real error, and its fix:** *"No Next.js version detected."*
-This happens because Vercel's Next.js version-detection step inspects
-`package.json` wherever it considers the project root — which, without a
-"Root Directory" set in the Vercel dashboard, is the **repository root**,
-not `apps/web`. The repo root's `package.json` never declared `next` as a
-dependency at all (it only orchestrates the monorepo via Turborepo), so
-this check found nothing, independent of the custom `buildCommand` already
-in place.
+**Error 3:** `sh: line 1: cd: apps/web: No such file or directory`. This
+is the *opposite* problem: a root-level `vercel.json` with a
+`"buildCommand": "cd apps/web && npm run build"` override (a now-removed
+attempt to work around Errors 1–2 without setting Root Directory) — once
+Root Directory is correctly set to `apps/web`, Vercel's working directory
+*is already* `apps/web`, so that command tried to `cd` into a
+non-existent `apps/web/apps/web`. The root `vercel.json` has been
+simplified back down to just `{"framework": "nextjs"}` to remove this
+trap entirely — with Root Directory set correctly, no command overrides
+are needed anywhere.
 
-**Fix, two parts:**
-1. `next`, `react`, and `react-dom` are now also declared as direct
-   dependencies in the **root** `package.json` — purely so Vercel's
-   root-level scan finds a real Next.js dependency to detect.
-2. The root `vercel.json`'s `installCommand` now installs at **both**
-   levels:
-```json
-{
-  "installCommand": "npm install && cd apps/web && npm install",
-  "buildCommand": "cd apps/web && npm run build",
-  "outputDirectory": "apps/web/.next",
-  "framework": "nextjs"
-}
-```
-   so a real, resolvable `next` package exists in root `node_modules`
-   too, not just inside `apps/web`, in case Vercel's version check needs
-   an actually-installed package rather than just a package.json entry.
-
-**Verified, not assumed:** ran the exact new `installCommand` from a full
-repository checkout — confirmed `next` resolves at the root
-(`require.resolve('next/package.json')` → real path, version `14.2.35`,
-satisfying `^14.2.5`) — then ran the exact `buildCommand` and confirmed
-`apps/web/.next` built successfully, all routes compiling, with
-`apps/api/node_modules` still never created.
-
-### The one thing I genuinely cannot fix from this codebase
-
-**The officially correct, Vercel-documented solution for monorepos is to
-set this project's "Root Directory" to `apps/web` in the Vercel dashboard**
-(Project Settings → General → Root Directory). This makes Vercel treat
-`apps/web` as the actual project root for *every* purpose — dependency
-detection, framework detection, output detection — not just for a custom
-build command, which is a more reliable mechanism than anything a
-repo-root `vercel.json` can fully replicate. The fixes above are a
-defensive fallback for the case where Root Directory is left unset; if
-you can set it, do — it removes an entire class of "detection looked in
-the wrong place" failures like the three encountered so far, permanently.
+**The fix that actually resolves all three, together:** set Root
+Directory to `apps/web` in the dashboard, and don't override
+build/install/output commands at any level (root `vercel.json`,
+`apps/web/vercel.json`, or the dashboard) — let Vercel's own Next.js
+framework detection handle everything once it's looking in the right
+place. If a previous deploy attempt saved a Build/Install/Output Command
+override in the dashboard, clear those fields explicitly; they persist
+across Root Directory changes and won't reset themselves.
 
 ### ⚠️ Required environment variables — a build succeeding does not mean the site works
 
