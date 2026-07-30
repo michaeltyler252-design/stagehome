@@ -1,0 +1,28 @@
+# Versions marked "(verified)" were actually pip-installed and exercised
+# by real tests in this sandbox during development. The remainder are
+# specified with a version floor but were not individually round-trip
+# tested here — see MIGRATION.md "Remaining work" for exactly which
+# features (Celery tasks, Sentry init, rate limiting, PostGIS queries via
+# geoalchemy2) still need that verification pass.
+
+fastapi==0.115.0          # note: sandbox had a newer 0.141.1 available and verified against; 0.115+ is the floor
+uvicorn[standard]==0.30.0
+sqlalchemy==2.0.35        # verified: 2.0.51 in sandbox
+asyncpg==0.29.0           # verified: 0.31.0 in sandbox
+psycopg2-binary==2.9.9
+alembic==1.13.0           # verified: 1.18.5 in sandbox
+pydantic==2.9.0           # verified: 2.13.4 in sandbox
+pydantic-settings==2.5.0  # verified: 2.14.2 in sandbox
+email-validator==2.2.0    # verified: 2.3.0 in sandbox
+python-jose[cryptography]==3.3.0  # verified: 3.5.0 in sandbox
+argon2-cffi==23.1.0       # verified: 25.1.0 in sandbox
+authlib==1.3.2
+httpx==0.27.0             # verified: 0.28.1 in sandbox
+pyotp==2.9.0
+redis==5.0.8
+celery[redis]==5.4.0
+python-multipart==0.0.9
+sentry-sdk[fastapi]==2.13.0
+slowapi==0.1.9
+geoalchemy2==0.15.2
+gunicorn==22.0.0
