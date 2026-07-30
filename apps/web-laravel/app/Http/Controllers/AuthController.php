@@ -40,7 +40,7 @@ class AuthController extends Controller
 
     public function showLogin()
     {
-        return view('auth.login');
+        return view('auth.login', ['googleLoginUrl' => $this->api->googleLoginUrl()]);
     }
 
     public function login(Request $request)
@@ -65,11 +65,50 @@ class AuthController extends Controller
 
     public function logout()
     {
-        // Note: the FastAPI backend's /auth/logout endpoint is not yet
-        // ported (see apps/api-py/MIGRATION.md) — this clears the local
-        // Laravel session only, matching what's actually implemented
-        // server-side today rather than calling an endpoint that would 501.
+        // Now that /auth/logout is genuinely implemented (see
+        // apps/api-py/MIGRATION.md), this actually revokes the backend
+        // session — not just clearing the local Laravel session, which
+        // would leave the refresh token technically still valid.
+        if (Session::has('refresh_token')) {
+            $this->api->logout();
+        }
         Session::forget(['access_token', 'refresh_token', 'user']);
         return redirect('/');
+    }
+
+    public function showVerifyPhone()
+    {
+        if (! Session::has('access_token')) {
+            return redirect('/sign-in');
+        }
+        return view('auth.verify-phone');
+    }
+
+    public function requestOtp(Request $request)
+    {
+        if (! Session::has('access_token')) {
+            return redirect('/sign-in');
+        }
+        $validated = $request->validate(['phone' => 'required|string']);
+        $result = $this->api->requestOtp($validated['phone']);
+        Session::put('otp_phone', $validated['phone']);
+        return back()->with('status', $result['ok'] ? 'Verification code sent.' : 'Could not send a verification code.');
+    }
+
+    public function verifyOtp(Request $request)
+    {
+        if (! Session::has('access_token')) {
+            return redirect('/sign-in');
+        }
+        $validated = $request->validate(['code' => 'required|string']);
+        $phone = Session::get('otp_phone');
+        if (! $phone) {
+            return back()->withErrors(['code' => 'Request a verification code first.']);
+        }
+        $result = $this->api->verifyOtp($phone, $validated['code']);
+        if (! $result['ok']) {
+            return back()->withErrors(['code' => $result['body']['detail'] ?? 'Incorrect verification code.']);
+        }
+        return redirect('/dashboard')->with('status', 'Phone number verified.');
     }
 }

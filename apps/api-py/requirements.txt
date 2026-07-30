@@ -17,6 +17,7 @@ email-validator==2.2.0    # verified: 2.3.0 in sandbox
 python-jose[cryptography]==3.3.0  # verified: 3.5.0 in sandbox
 argon2-cffi==23.1.0       # verified: 25.1.0 in sandbox
 authlib==1.3.2
+itsdangerous==2.2.0
 httpx==0.27.0             # verified: 0.28.1 in sandbox
 pyotp==2.9.0
 redis==5.0.8

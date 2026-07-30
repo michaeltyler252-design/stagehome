@@ -1,17 +1,14 @@
-"""Direct port of search/search.service.ts.
-
-Honest note: the original's database-level and in-memory sort options
-(lowest_rent, highest_rent, highest_verified_rating, available_soonest,
-most_reviewed) rely on joined pricing_rules/reviews/availability_periods
-data. The PostGIS radius search and core filters below are fully ported
-and real; the richer sort options are simplified to created_at ordering
-for now — see MIGRATION.md "Remaining work" for this exact, named gap
-rather than silently approximating it."""
+"""Direct, now-complete port of search/search.service.ts — including the
+richer sort options (lowest_rent, highest_rent, highest_verified_rating,
+available_soonest, most_reviewed), which a previous round left
+simplified to created_at ordering. Real joins to
+pricing_rules/reviews/availability_periods now back every sort option
+the original supports."""
 
 from sqlalchemy import func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import County, Property, PropertyCategory
+from app.models import AvailabilityPeriod, County, PricingRule, Property, PropertyCategory, Review
 
 
 async def find_within_radius(db: AsyncSession, lat: float, lng: float, radius_km: float) -> dict[str, float]:
@@ -71,15 +68,69 @@ async def search(
     count_stmt = select(func.count()).select_from(stmt.with_only_columns(Property.id).subquery())
     total = (await db.execute(count_stmt)).scalar_one()
 
-    needs_full_set_sort = sort == "nearest"
+    # "nearest" and the richer sorts below need the full matching set
+    # fetched before slicing to a page (same documented limitation the
+    # original itself notes: correct within a page, not globally correct
+    # across pages until this data is indexed/denormalised — see the
+    # original search.service.ts's own comment on this).
+    full_set_sorts = {"nearest", "lowest_rent", "highest_rent", "highest_verified_rating", "available_soonest"}
+    needs_full_set_sort = sort in full_set_sorts
 
-    if not needs_full_set_sort:
+    if sort == "most_reviewed":
+        # This one CAN be expressed as a direct database ORDER BY.
+        review_counts = (
+            select(Review.property_id, func.count().label("review_count"))
+            .group_by(Review.property_id)
+            .subquery()
+        )
+        stmt = stmt.outerjoin(review_counts, Property.id == review_counts.c.property_id)
+        stmt = stmt.order_by(func.coalesce(review_counts.c.review_count, 0).desc())
+        stmt = stmt.offset((page - 1) * limit).limit(limit)
+    elif not needs_full_set_sort:
         stmt = stmt.order_by(Property.created_at.desc()).offset((page - 1) * limit).limit(limit)
 
     results = list((await db.execute(stmt)).scalars().all())
 
-    if sort == "nearest" and radius_distance_by_id:
-        results.sort(key=lambda p: radius_distance_by_id.get(p.id, float("inf")))
+    if needs_full_set_sort:
+        property_ids = [p.id for p in results]
+
+        if sort == "nearest" and radius_distance_by_id:
+            results.sort(key=lambda p: radius_distance_by_id.get(p.id, float("inf")))
+
+        elif sort in ("lowest_rent", "highest_rent"):
+            rent_by_property = dict(
+                (await db.execute(
+                    select(PricingRule.property_id, func.min(PricingRule.rent_amount_min))
+                    .where(PricingRule.property_id.in_(property_ids))
+                    .group_by(PricingRule.property_id)
+                )).all()
+            )
+            reverse = sort == "highest_rent"
+            default = float("-inf") if reverse else float("inf")
+            results.sort(key=lambda p: float(rent_by_property.get(p.id, default) or default), reverse=reverse)
+
+        elif sort == "highest_verified_rating":
+            avg_rating_by_property = dict(
+                (await db.execute(
+                    select(Review.property_id, func.avg(Review.overall_rating))
+                    .where(Review.property_id.in_(property_ids))
+                    .group_by(Review.property_id)
+                )).all()
+            )
+            results.sort(key=lambda p: float(avg_rating_by_property.get(p.id, -1) or -1), reverse=True)
+
+        elif sort == "available_soonest":
+            available_from_by_property = dict(
+                (await db.execute(
+                    select(AvailabilityPeriod.property_id, func.min(AvailabilityPeriod.available_from))
+                    .where(AvailabilityPeriod.property_id.in_(property_ids), AvailabilityPeriod.available_from.is_not(None))
+                    .group_by(AvailabilityPeriod.property_id)
+                )).all()
+            )
+            from datetime import datetime, timezone
+            far_future = datetime.max.replace(tzinfo=timezone.utc)
+            results.sort(key=lambda p: available_from_by_property.get(p.id) or far_future)
+
         results = results[(page - 1) * limit : page * limit]
 
     return {

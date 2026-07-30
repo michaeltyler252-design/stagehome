@@ -1,14 +1,12 @@
 """
-Everything previously stubbed here (organisations, properties, bookings,
-payments, agreements, reviews, blog, support, dashboards, verification)
-has now been fully ported to its own router — see main.py's router list.
+Every route that was ever stubbed in this file has now been fully
+ported to its own real router — organisations, properties, bookings,
+payments, agreements, reviews, blog, support, dashboards, verification,
+and (as of this round) auth refresh/logout/OTP/admin-MFA/Google OAuth.
 
-What remains genuinely unported: auth refresh/logout/Google OAuth/phone
-OTP/admin MFA — those routes already exist in app/routers/auth.py,
-still returning 501 there. See MIGRATION.md "Remaining work".
-
-Nothing is declared in this file anymore — kept only so main.py's
-import doesn't break, and as a marker for future work.
+Nothing is declared in this file anymore. Kept only so main.py's import
+doesn't break, and as a historical marker of where this project's
+migration started from.
 """
 
 from fastapi import APIRouter

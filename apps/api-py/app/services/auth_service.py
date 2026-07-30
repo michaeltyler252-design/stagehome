@@ -102,3 +102,71 @@ async def login(db: AsyncSession, email: str, password: str) -> tuple[str, str, 
     roles = await load_role_names(db, user.id)
     access_token, refresh_token = await _issue_session_tokens(db, user.id, user.email, roles)
     return access_token, refresh_token, user, roles
+
+
+async def refresh(db: AsyncSession, refresh_token: str) -> tuple[str, str]:
+    """Exchanges a valid, non-revoked, non-expired refresh token for a new
+    access token + refresh token pair (rotation: the old session is
+    revoked and a new one issued, so a stolen refresh token can only ever
+    be used once before its replacement invalidates it)."""
+    from app.core.security import JWTError, verify_refresh_token
+
+    invalid = HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired refresh token.")
+
+    try:
+        payload = verify_refresh_token(refresh_token)
+    except JWTError:
+        raise invalid
+
+    session_id = payload.get("sessionId")
+    user_id = payload.get("sub")
+    if not session_id or not user_id:
+        raise invalid
+
+    session = (await db.execute(select(UserSession).where(UserSession.id == session_id))).scalar_one_or_none()
+    if session is None or session.revoked_at is not None:
+        raise invalid
+
+    now = datetime.now(session.expires_at.tzinfo) if session.expires_at.tzinfo else datetime.now()
+    if session.expires_at < now:
+        raise invalid
+
+    # The presented token must actually match what's on record for this
+    # session (hashed comparison) — a session row existing isn't enough
+    # on its own; the caller must actually possess the real token.
+    if session.refresh_token != hash_token(refresh_token):
+        raise invalid
+
+    user = (await db.execute(select(User).where(User.id == user_id))).scalar_one_or_none()
+    if user is None:
+        raise invalid
+
+    # Rotate: revoke the old session, issue a brand new one.
+    session.revoked_at = datetime.now(timezone.utc)
+    await db.commit()
+
+    roles = await load_role_names(db, user.id)
+    new_access_token, new_refresh_token = await _issue_session_tokens(db, user.id, user.email, roles)
+    return new_access_token, new_refresh_token
+
+
+async def logout(db: AsyncSession, refresh_token: str) -> None:
+    """Revokes the session tied to this refresh token, so it (and any
+    future access token minted from it) can no longer be used."""
+    from app.core.security import JWTError, verify_refresh_token
+
+    try:
+        payload = verify_refresh_token(refresh_token)
+    except JWTError:
+        # An already-invalid/expired token is, functionally, already
+        # logged out — succeed quietly rather than error.
+        return
+
+    session_id = payload.get("sessionId")
+    if not session_id:
+        return
+
+    session = (await db.execute(select(UserSession).where(UserSession.id == session_id))).scalar_one_or_none()
+    if session is not None and session.revoked_at is None:
+        session.revoked_at = datetime.now(timezone.utc)
+        await db.commit()

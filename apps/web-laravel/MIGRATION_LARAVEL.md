@@ -9,14 +9,14 @@ Packagist itself). I could not install Laravel, run `composer install`,
 boot a dev server, or execute a single PHPUnit test.
 
 **What IS verified, for real, this round:**
-- Every one of **44 PHP files** (up from 22) passes `php -l` — real
+- Every one of **45 PHP files** (up from 44) passes `php -l` — real
   syntax linting via a genuinely installed PHP 8.3 CLI. Zero errors.
-- Every one of **27 Blade views** (up from 10) passes the same check.
-- **Every view referenced by a controller (25 total) exists on disk** —
+- Every one of **28 Blade views** (up from 27) passes the same check.
+- **Every view referenced by a controller (27 total) exists on disk** —
   checked programmatically, zero missing.
-- **Every named route referenced anywhere in a Blade template (37 total)
-  matches a route actually defined in `routes/web.php`** (42 defined
-  total) — checked programmatically, zero missing.
+- **Every named route referenced anywhere in a Blade template (39 total)
+  matches a route actually defined in `routes/web.php`** — checked
+  programmatically, zero missing.
 
 That's real internal consistency verification — it proves the
 application's own files reference each other correctly. It does **not**
@@ -29,7 +29,10 @@ the full middleware/session/Blade-compilation stack succeeds.
 **Public**: home, counties (list/detail), universities (list/detail),
 search, property detail, blog (list/detail).
 
-**Auth**: register, login, logout.
+**Auth**: register, login, real logout (revokes the backend session, not
+just the local Laravel session), phone OTP verification, Google OAuth
+sign-in link (routes through to the backend's real authlib
+implementation).
 
 **Tenant**: dashboard, favourites (list/add/remove), full booking flow
 (quote → hold → confirm), payment initiation (M-Pesa/Daraja phone

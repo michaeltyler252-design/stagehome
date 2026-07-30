@@ -306,4 +306,51 @@ class StageHomeApiClient
     {
         return $this->client()->get('/support/tickets/mine')->json() ?? [];
     }
+
+    // --- Session lifecycle ---
+    public function logout(): array
+    {
+        $refreshToken = Session::get('refresh_token');
+        $response = $this->client()->post('/auth/logout', ['refresh_token' => $refreshToken]);
+        return ['ok' => $response->successful()];
+    }
+
+    public function refreshToken(): array
+    {
+        $refreshToken = Session::get('refresh_token');
+        $response = $this->client()->post('/auth/refresh', ['refresh_token' => $refreshToken]);
+        return ['ok' => $response->successful(), 'body' => $response->json()];
+    }
+
+    // --- Phone OTP verification ---
+    public function requestOtp(string $phone): array
+    {
+        $response = $this->client()->post('/auth/otp/request', ['phone' => $phone]);
+        return ['ok' => $response->successful(), 'body' => $response->json()];
+    }
+
+    public function verifyOtp(string $phone, string $code): array
+    {
+        $response = $this->client()->post('/auth/otp/verify', ['phone' => $phone, 'code' => $code]);
+        return ['ok' => $response->successful(), 'body' => $response->json()];
+    }
+
+    // --- Admin MFA (TOTP) ---
+    public function adminMfaSetup(): array
+    {
+        $response = $this->client()->post('/auth/admin-mfa/setup');
+        return ['ok' => $response->successful(), 'body' => $response->json()];
+    }
+
+    public function adminMfaVerify(string $code): array
+    {
+        $response = $this->client()->post('/auth/admin-mfa/verify', ['code' => $code]);
+        return ['ok' => $response->successful(), 'body' => $response->json()];
+    }
+
+    // --- Google OAuth ---
+    public function googleLoginUrl(): string
+    {
+        return $this->baseUrl.'/auth/google';
+    }
 }

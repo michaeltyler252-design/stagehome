@@ -4,6 +4,7 @@ Direct port of apps/api/src/main.ts's bootstrap() function.
 
 from fastapi import FastAPI, Request
 from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.middleware.sessions import SessionMiddleware
 from starlette.responses import Response
 
 from app.core.config import settings
@@ -92,6 +93,11 @@ def create_app() -> FastAPI:
 
     app.add_middleware(SecurityHeadersMiddleware)
     app.add_middleware(CorsMiddleware)
+    # Required by authlib's Google OAuth flow (stores state/nonce between
+    # the redirect and callback). Uses the same JWT access secret as a
+    # signing key — a distinct SESSION_SECRET could be introduced later
+    # without any other change.
+    app.add_middleware(SessionMiddleware, secret_key=settings.jwt_access_secret)
 
     app.include_router(health.router, prefix="/api/v1")
     app.include_router(auth.router, prefix="/api/v1")

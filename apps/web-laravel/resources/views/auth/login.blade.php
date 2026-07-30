@@ -14,4 +14,5 @@
     <label>Password <input type="password" name="password" required></label>
     <button type="submit">Sign in</button>
 </form>
+<p><a href="{{ $googleLoginUrl }}">Sign in with Google</a></p>
 @endsection
