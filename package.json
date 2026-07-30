@@ -8,7 +8,8 @@
   },
   "packageManager": "pnpm@9.7.0",
   "scripts": {
-    "build": "turbo run build",
+    "build": "turbo run build --filter=@student-housing/web",
+    "build:all": "turbo run build",
     "dev": "turbo run dev",
     "lint": "turbo run lint",
     "test": "turbo run test",
