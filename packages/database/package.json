@@ -12,6 +12,7 @@
     "prisma:studio": "prisma studio",
     "prisma:seed": "tsx src/seed/index.ts",
     "seed:blog": "tsx src/staging/seed-blog-posts.ts",
+    "import:kenyan-universities": "tsx src/staging/import-all-kenyan-universities.ts",
     "bootstrap-production-data": "tsx src/staging/bootstrap-production-data.ts",
     "routine-deploy-sync": "tsx src/staging/routine-deploy-sync.ts",
     "dev:promote-and-verify-universities": "NODE_ENV=development tsx src/staging/dev-promote-and-verify-universities.ts",
