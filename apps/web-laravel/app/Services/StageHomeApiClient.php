@@ -147,4 +147,163 @@ class StageHomeApiClient
         $response = $this->client()->get('/dashboard/tenant');
         return $response->successful() ? $response->json() : null;
     }
+
+    public function managerDashboard(string $organisationId): ?array
+    {
+        $response = $this->client()->get("/dashboard/manager/{$organisationId}");
+        return $response->successful() ? $response->json() : null;
+    }
+
+    public function adminDashboard(): ?array
+    {
+        $response = $this->client()->get('/dashboard/admin');
+        return $response->successful() ? $response->json() : null;
+    }
+
+    // --- Payments ---
+    public function initiatePayment(string $bookingId, string $phone, ?string $idempotencyKey = null): array
+    {
+        $response = $this->client()->post('/payments/initiate', array_filter([
+            'booking_id' => $bookingId,
+            'phone' => $phone,
+            'idempotency_key' => $idempotencyKey,
+        ]));
+        return ['ok' => $response->successful(), 'status' => $response->status(), 'body' => $response->json()];
+    }
+
+    // --- Reviews ---
+    public function listReviewsForProperty(string $propertyId): array
+    {
+        return $this->client()->get("/public/properties/{$propertyId}/reviews")->json() ?? [];
+    }
+
+    public function createReview(string $bookingId, float $overallRating, array $categories): array
+    {
+        $response = $this->client()->post("/bookings/{$bookingId}/reviews", [
+            'overall_rating' => $overallRating,
+            'categories' => $categories,
+        ]);
+        return ['ok' => $response->successful(), 'status' => $response->status(), 'body' => $response->json()];
+    }
+
+    public function respondToReview(string $reviewId, string $body): array
+    {
+        $response = $this->client()->post("/reviews/{$reviewId}/responses", ['body' => $body]);
+        return ['ok' => $response->successful(), 'body' => $response->json()];
+    }
+
+    // --- Organisations ---
+    public function createOrganisation(string $name, ?string $registrationNumber, ?string $kraPin): array
+    {
+        $response = $this->client()->post('/organisations', array_filter([
+            'name' => $name,
+            'registration_number' => $registrationNumber,
+            'kra_pin' => $kraPin,
+        ]));
+        return ['ok' => $response->successful(), 'body' => $response->json()];
+    }
+
+    public function listMyOrganisations(): array
+    {
+        return $this->client()->get('/organisations/mine')->json() ?? [];
+    }
+
+    // --- Manager: properties CRUD ---
+    public function listOrganisationProperties(string $organisationId): array
+    {
+        return $this->client()->get("/organisations/{$organisationId}/properties")->json() ?? [];
+    }
+
+    public function createManagerProperty(string $organisationId, array $data): array
+    {
+        $response = $this->client()->post("/organisations/{$organisationId}/properties", $data);
+        return ['ok' => $response->successful(), 'body' => $response->json()];
+    }
+
+    public function getManagerProperty(string $propertyId): ?array
+    {
+        $response = $this->client()->get("/properties/{$propertyId}");
+        return $response->successful() ? $response->json() : null;
+    }
+
+    public function updateManagerProperty(string $propertyId, array $data): array
+    {
+        $response = $this->client()->patch("/properties/{$propertyId}", $data);
+        return ['ok' => $response->successful(), 'body' => $response->json()];
+    }
+
+    public function submitPropertyForVerification(string $propertyId): array
+    {
+        $response = $this->client()->post("/properties/{$propertyId}/submit-for-verification");
+        return ['ok' => $response->successful(), 'body' => $response->json()];
+    }
+
+    public function addUnit(string $propertyId, array $data): array
+    {
+        $response = $this->client()->post("/properties/{$propertyId}/units", $data);
+        return ['ok' => $response->successful(), 'body' => $response->json()];
+    }
+
+    // --- Admin: verification workflows ---
+    public function verificationQueue(): array
+    {
+        return $this->client()->get('/admin/verification/queue')->json() ?? [];
+    }
+
+    public function approveProperty(string $propertyId): array
+    {
+        $response = $this->client()->post("/admin/verification/properties/{$propertyId}/approve");
+        return ['ok' => $response->successful(), 'body' => $response->json()];
+    }
+
+    public function publishProperty(string $propertyId): array
+    {
+        $response = $this->client()->post("/admin/verification/properties/{$propertyId}/publish");
+        return ['ok' => $response->successful(), 'body' => $response->json()];
+    }
+
+    public function rejectProperty(string $propertyId, string $reason): array
+    {
+        $response = $this->client()->post("/admin/verification/properties/{$propertyId}/reject", ['reason' => $reason]);
+        return ['ok' => $response->successful(), 'body' => $response->json()];
+    }
+
+    public function propertyPromotionQueue(): array
+    {
+        return $this->client()->get('/admin/verification/properties/promotion-queue')->json() ?? [];
+    }
+
+    public function universityPromotionQueue(): array
+    {
+        return $this->client()->get('/admin/verification/universities/promotion-queue')->json() ?? [];
+    }
+
+    public function universityVerificationQueue(): array
+    {
+        return $this->client()->get('/admin/verification/universities/verification-queue')->json() ?? [];
+    }
+
+    public function verifyUniversity(string $universityId): array
+    {
+        $response = $this->client()->post("/admin/verification/universities/{$universityId}/verify");
+        return ['ok' => $response->successful(), 'body' => $response->json()];
+    }
+
+    public function rejectUniversity(string $universityId, string $reason): array
+    {
+        $response = $this->client()->post("/admin/verification/universities/{$universityId}/reject", ['reason' => $reason]);
+        return ['ok' => $response->successful(), 'body' => $response->json()];
+    }
+
+    // --- Support ---
+    public function createSupportTicket(string $subject, string $body, ?string $priority = null): array
+    {
+        $response = $this->client()->post('/support/tickets', array_filter(['subject' => $subject, 'body' => $body, 'priority' => $priority]));
+        return ['ok' => $response->successful(), 'body' => $response->json()];
+    }
+
+    public function listMySupportTickets(): array
+    {
+        return $this->client()->get('/support/tickets/mine')->json() ?? [];
+    }
 }

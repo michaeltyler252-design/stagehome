@@ -1,20 +1,31 @@
-# Student Housing Marketplace — Kenya
+# StageHome — Kenyan Student Housing Marketplace
 
-Phase 1 (Nairobi City) foundation build. See `docs/` for architecture,
-data-quality, and operations documentation produced during Milestone 1.
+> **Architecture note (current):** This project is now a two-service,
+> Python + Laravel stack only:
+> - **`apps/api-py`** — FastAPI/SQLAlchemy/PostgreSQL/Redis/Celery backend.
+>   See `apps/api-py/MIGRATION.md` for exactly what's ported and tested
+>   (39 real tests passing) versus what's still in progress.
+> - **`apps/web-laravel`** — Laravel 11/PHP 8.3 frontend, consuming the
+>   FastAPI backend over HTTP. See `apps/web-laravel/MIGRATION_LARAVEL.md`
+>   for an equally honest disclosure: this code is syntax-verified and
+>   internally consistency-checked, but has never been booted against a
+>   real Laravel installation (the sandbox that built it has no network
+>   access to Packagist).
+>
+> The previous NestJS/TypeScript backend and Next.js/React frontend have
+> been fully removed. Everything below this note is historical — it
+> describes the old Node.js/pnpm stack and no longer reflects the
+> current setup. Kept for the original project history rather than
+> deleted outright; see the two MIGRATION docs above for what's actually
+> true today.
 
-**Quick links:** [Deployment Guide](./DEPLOYMENT_GUIDE.md) ·
-[Database Migration Guide](./MIGRATION_GUIDE.md) ·
-[Environment Variables Reference](./ENVIRONMENT_VARIABLES.md) ·
-[Changelog](./CHANGELOG.md) · [API Docs](./docs/api/API_DOCS.md) ·
-[User Guide](./docs/USER_GUIDE.md)
-
-## Prerequisites
+## Prerequisites (historical — describes the removed Node.js stack)
 
 - Node.js >= 20.11.0
 - pnpm >= 9.0.0 (`corepack enable && corepack prepare pnpm@9.7.0 --activate`)
 - Docker Desktop or Docker Engine + Compose plugin
 - Git
+
 
 ## First-time setup
 

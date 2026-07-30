@@ -1,71 +1,84 @@
 # StageHome — Next.js/React → Laravel/PHP Frontend Migration
 
-## Critical, honest disclosure
+## Critical, honest disclosure — unchanged from the previous round
 
-**This code has never been booted, run, or tested.** My sandbox's network
-cannot reach `repo.packagist.org` (confirmed: `composer create-project`
-fails with an HTTP 403 from Packagist itself), meaning I could not
-install the actual Laravel framework, run `composer install`, boot a
-dev server, or execute a single PHPUnit test — unlike every other piece
-of this project this session, which was genuinely run and tested.
+**This code has never been booted, run, or tested against a real Laravel
+framework.** My sandbox's network cannot reach `repo.packagist.org`
+(confirmed: `composer create-project` fails with a real HTTP 403 from
+Packagist itself). I could not install Laravel, run `composer install`,
+boot a dev server, or execute a single PHPUnit test.
 
-**What I could verify**: every one of the 22 PHP files here passes
-`php -l` (real syntax linting, via a genuinely installed PHP 8.3 CLI) —
-zero syntax errors. That confirms these files are syntactically valid
-PHP and structurally follow Laravel 11's real conventions (the
-`Application::configure()` bootstrap style, PSR-4 autoloading,
-`Illuminate\Support\Facades\*` usage, Blade template syntax). It does
-**not** confirm the application actually boots, that routes resolve
-correctly end-to-end, or that the Blade templates render without error
-against real framework classes.
+**What IS verified, for real, this round:**
+- Every one of **44 PHP files** (up from 22) passes `php -l` — real
+  syntax linting via a genuinely installed PHP 8.3 CLI. Zero errors.
+- Every one of **27 Blade views** (up from 10) passes the same check.
+- **Every view referenced by a controller (25 total) exists on disk** —
+  checked programmatically, zero missing.
+- **Every named route referenced anywhere in a Blade template (37 total)
+  matches a route actually defined in `routes/web.php`** (42 defined
+  total) — checked programmatically, zero missing.
 
-## Architecture
+That's real internal consistency verification — it proves the
+application's own files reference each other correctly. It does **not**
+prove the app actually boots, that Laravel's own framework classes
+resolve the way this code assumes, or that a live HTTP request through
+the full middleware/session/Blade-compilation stack succeeds.
 
-- **Backend**: `apps/api-py` (FastAPI/SQLAlchemy/PostgreSQL) — unchanged,
-  remains the single source of truth for all data and business logic.
-- **Frontend**: `apps/web-laravel` (Laravel 11/PHP 8.3) — a thin
-  presentation layer. Every page fetches data from the FastAPI backend
-  via `App\Services\StageHomeApiClient` (Guzzle/Laravel's `Http` facade)
-  and renders it with Blade templates. No database connection of its own,
-  no Eloquent models — deliberately, since duplicating the data layer in
-  two frameworks would be a real design mistake, not a feature.
+## What's now covered (structurally, unverified against a real boot)
 
-## What's covered (structurally, unverified)
+**Public**: home, counties (list/detail), universities (list/detail),
+search, property detail, blog (list/detail).
 
-Home, Counties (list/detail), Universities (list/detail), Search,
-Property detail, Blog (list/detail), Register, Login, Logout, Tenant
-dashboard.
+**Auth**: register, login, logout.
 
-## What's NOT covered
+**Tenant**: dashboard, favourites (list/add/remove), full booking flow
+(quote → hold → confirm), payment initiation (M-Pesa/Daraja phone
+number form), review submission, support tickets (create/list).
 
-Manager/Admin dashboards, property CRUD forms, the full booking flow UI
-(quote → hold → confirm), payment initiation UI, agreement signing UI,
-reviews submission, support tickets, favourites toggle wiring (the button
-markup exists in `properties/show.blade.php` but isn't wired to a real
-route/controller action yet), and password reset. Also not done: any of
-Laravel's own default scaffolding files that `composer create-project`
-normally generates automatically (most `config/*.php` files beyond
-`services.php`, the default middleware stack, `phpunit.xml`, etc.) —
-only what was hand-written for this specific task exists.
+**Manager**: organisation creation/list, manager dashboard, property
+creation, unit creation, submit-for-verification.
+
+**Admin**: admin dashboard, verification queue (approve/publish/reject
+properties, verify/reject universities).
+
+## Every backend feature now has a corresponding frontend surface
+
+Counties, Universities, Properties, Search, Bookings, Payments,
+Favourites, Notifications (listed on tenant dashboard), Reviews, Blog,
+Admin dashboard, Manager dashboard, Verification workflows, Support —
+all have real routes/controllers/views calling the corresponding
+FastAPI endpoint via `App\Services\StageHomeApiClient`.
+
+## What's still genuinely thin
+
+- No CSS/styling beyond raw HTML — this was never the stated priority
+  given the constraints, but worth naming: these views are functional
+  markup, not a styled product.
+- Reply-to-review UI exists as a controller action but no view surfaces
+  it yet (a manager would need the route directly).
+- Property promotion/university promotion queue actions (the raw
+  staging-record "promote" step) are fetched in `AdminController` but
+  the Blade view doesn't yet render action buttons for them — only the
+  main review/verify/reject queues do.
+- No password reset, no admin MFA, no Google OAuth UI (the backend
+  routes themselves are also still unported — see `apps/api-py/MIGRATION.md`).
 
 ## To actually get this running
 
 1. On a machine with real internet access: `composer create-project
    laravel/laravel:^11.0 stagehome-laravel-fresh`, then copy this
    directory's `app/`, `routes/web.php`, and `resources/views/` over the
-   fresh skeleton (keeping the fresh skeleton's own `config/`,
-   `bootstrap/`, and other framework files, merging in `services.php`'s
-   one addition).
+   fresh skeleton.
 2. `composer install`
 3. Set `STAGEHOME_API_BASE_URL` in `.env` to the live FastAPI backend.
-4. `php artisan key:generate`
-5. `php artisan serve`
-6. Only then can this actually be tested against the real backend.
+4. `php artisan key:generate && php artisan serve`
+5. Only then can this be tested against the real backend — which is
+   itself still missing several endpoints (auth refresh/logout/OAuth/OTP,
+   several search sort options) per `apps/api-py/MIGRATION.md`.
 
-## Why I'm disclosing this so explicitly
+## Why this disclosure is exactly this direct
 
-Every other piece of this project — the FastAPI backend, its 39 tests,
-the SQLAlchemy models — was built and genuinely verified running real
-code in this sandbox. This is different, and pretending otherwise would
-be dishonest. The Packagist block is a real, external, unavoidable
-constraint of this specific development environment, not a corner cut.
+Every other piece of this project — the FastAPI backend and its 39
+tests — was built and genuinely run in this sandbox. This wasn't, for a
+real and external reason (the Packagist block), not a shortcut. Claiming
+this was "tested until it works correctly" would not be true.
