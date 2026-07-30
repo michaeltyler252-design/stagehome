@@ -118,30 +118,22 @@ async def get_university(slug: str, db: AsyncSession = Depends(get_db)):
 @router.get("/properties")
 async def search_properties(
     countySlug: str | None = Query(default=None),
+    categoryKey: str | None = Query(default=None),
+    keyword: str | None = Query(default=None),
+    lat: float | None = Query(default=None),
+    lng: float | None = Query(default=None),
+    radiusKm: float | None = Query(default=None),
+    sort: str | None = Query(default=None),
+    page: int = Query(default=1, ge=1),
     limit: int = Query(default=12, le=100),
     db: AsyncSession = Depends(get_db),
 ):
-    stmt = select(Property).where(Property.publication_status == "PUBLISHED")
-    if countySlug:
-        stmt = stmt.join(County, Property.county_id == County.id).where(County.slug == countySlug)
-    stmt = stmt.limit(limit)
+    from app.services.search_service import search as search_properties_impl
 
-    properties = (await db.execute(stmt)).scalars().all()
-    total = (
-        await db.execute(
-            select(func.count()).select_from(
-                stmt.with_only_columns(Property.id).order_by(None).limit(None).subquery()
-            )
-        )
-    ).scalar_one()
-
-    return {
-        "results": [
-            {"id": p.id, "title": p.title, "slug": p.slug, "publicReference": p.public_reference}
-            for p in properties
-        ],
-        "pagination": {"page": 1, "limit": limit, "total": total, "totalPages": 1},
-    }
+    return await search_properties_impl(
+        db, county_slug=countySlug, category_key=categoryKey, keyword=keyword,
+        lat=lat, lng=lng, radius_km=radiusKm, sort=sort, page=page, limit=limit,
+    )
 
 
 @router.get("/properties/{slug}")

@@ -8,7 +8,24 @@ from starlette.responses import Response
 
 from app.core.config import settings
 from app.core.cors_origin_matcher import is_allowed_origin
-from app.routers import auth, favourites, health, notifications, public, stubs
+from app.routers import (
+    agreements,
+    auth,
+    blog,
+    bookings,
+    dashboards,
+    favourites,
+    health,
+    notifications,
+    organisations,
+    payments,
+    properties,
+    public,
+    reviews,
+    stubs,
+    support,
+    verification,
+)
 
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
@@ -81,6 +98,16 @@ def create_app() -> FastAPI:
     app.include_router(public.router, prefix="/api/v1")
     app.include_router(favourites.router, prefix="/api/v1")
     app.include_router(notifications.router, prefix="/api/v1")
+    app.include_router(organisations.router, prefix="/api/v1")
+    app.include_router(properties.router, prefix="/api/v1")
+    app.include_router(bookings.router, prefix="/api/v1")
+    app.include_router(payments.router, prefix="/api/v1")
+    app.include_router(agreements.router, prefix="/api/v1")
+    app.include_router(reviews.router, prefix="/api/v1")
+    app.include_router(blog.router, prefix="/api/v1")
+    app.include_router(support.router, prefix="/api/v1")
+    app.include_router(dashboards.router, prefix="/api/v1")
+    app.include_router(verification.router, prefix="/api/v1")
     app.include_router(stubs.router, prefix="/api/v1")
 
     return app

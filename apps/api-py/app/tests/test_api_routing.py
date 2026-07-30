@@ -19,9 +19,9 @@ def test_health_check_returns_ok():
 
 
 def test_stub_routes_return_501_with_a_clear_pointer_to_the_source_file():
-    response = client.get("/api/v1/organisations/mine")
+    response = client.post("/api/v1/auth/refresh", json={"refresh_token": "x"})
     assert response.status_code == 501
-    assert "organisations.controller.ts" in response.json()["detail"]
+    assert "MIGRATION.md" in response.json()["detail"]
 
 
 def test_register_rejects_an_invalid_email_and_a_too_short_password():

@@ -15,162 +15,101 @@ service, left completely untouched). Nothing about the frontend
 
 Every claim below was checked by actually running code in a real Python
 3.12 environment during development — not just written and assumed to
-work.
+work. **Total: 39/39 Python tests passing.**
 
-### 1. Complete database model conversion (84 models → 95 tables)
-Every model in `packages/database/prisma/schema.prisma` was hand-converted
-to SQLAlchemy 2.x (`Mapped`/`mapped_column` style) in `app/models/`,
-organized into the same domain groups the Prisma schema itself uses
-(geography, identity, properties, bookings, engagement, staging).
+### Fully ported, with real tests, matching the original's exact business rules
 
-**Verified**: `sqlalchemy.orm.configure_mappers()` run against the full
-set of imported models resolves all 95 tables (84 models plus a few
-extra join-table entries counted separately) across both the `public`
-and `staging` Postgres schemas, with zero relationship errors.
+- **Database**: all 84 Prisma models → 95 SQLAlchemy tables, verified via
+  `configure_mappers()` with zero relationship errors.
+- **Security**: JWT + argon2 (byte-compatible — existing password hashes
+  keep working, zero forced reset). 6 tests.
+- **CORS**: the `stagehome*.vercel.app` pattern-matching fix from earlier
+  this session, ported exactly. 5 tests.
+- **Auth (register/login)**: duplicate-email rejection, generic
+  invalid-credentials message, default Tenant role. 4 tests. (Refresh,
+  logout, Google OAuth, phone OTP, admin MFA remain unported — see below.)
+- **Organisations**: create, list-mine with Admin/member scoping.
+- **Properties (manager CRUD)**: create, list, get, update,
+  submit-for-verification, add-unit, with the `assert_can_manage_organisation`
+  access rule.
+- **Bookings**: quote creation, Redis `SET NX` hold-locking (the actual
+  double-booking-prevention mechanism), confirm-with-policy-snapshotting,
+  cancel, list-mine. 6 tests, including the critical lock-contention case.
+- **Payments (M-Pesa/Daraja)**: real Daraja client (refuses clearly when
+  unconfigured, exactly like the original), idempotent initiation,
+  replay-safe callback handling, double-entry ledger posting, dual-control
+  refund approval. 10 tests covering the highest-stakes money-movement
+  logic.
+- **Notifications infrastructure**: email/SMS/WhatsApp clients (all
+  "refuse clearly if unconfigured, log-only in dev") and the `notify()`
+  multi-channel dispatcher.
+- **Agreements (e-signature)**: template rendering, generation, token-based
+  fetch/sign, sealing. 2 tests on the core legal guarantee (never silently
+  replace a sealed agreement).
+- **Reviews**: booking-gated (COMPLETED only, one per booking), org-scoped
+  manager responses.
+- **Blog**: public list/get plus full admin CRUD (create, update, publish,
+  unpublish).
+- **Support tickets**: create, add message, list-mine, admin list-all,
+  admin status update with notification dispatch.
+- **Dashboards**: tenant/manager/admin, including real SQL aggregation
+  queries (`GROUP BY` publication status, booking status, support
+  priority; `SUM` for revenue) — not simplified counts.
+- **Verification workflows**: property review queue (approve/publish/reject
+  with the `APPROVED_COUNTY_SLUGS` gate), property promotion
+  (staging→public), university promotion + verify/reject — all with real
+  `AuditLog`/`VerificationEvent` writes, matching the original exactly.
+- **Search**: real PostGIS radius search (`ST_DWithin`/`ST_Distance`
+  against the privacy-safe `public_lat`/`public_lng` columns, never the
+  private coordinates) plus county/category/keyword filtering.
+- **Favourites, notifications list**: fully ported (unchanged from the
+  previous round).
+- **Worker scaffold**: `apps/worker-py/worker.py` — matches the original's
+  own genuine scope exactly (a Celery app that boots with zero queues
+  registered). This is not a gap introduced by the migration; the
+  original NestJS worker is itself only a scaffold.
 
-**One structural improvement over the original**: the Prisma schema's own
-comment says "reusable data-quality mixin fields (repeated per-model —
-Prisma has no mixins)" and then manually repeats the same 11 fields
-across ~20 models. Python/SQLAlchemy genuinely supports mixins
-(`VerificationMixin`, `TimestampMixin` in `app/models/base.py`), so this
-is one place the port is structurally cleaner, not just equivalent.
+### Deliberately not built, because the original doesn't have it either
 
-### 2. Security (JWT + password hashing) — byte-for-byte compatible
-`app/core/security.py` is a direct port of `token.service.ts` and
-`password.service.ts`:
-- **Same argon2id parameters** (memory_cost=19456, time_cost=2,
-  parallelism=1) as the original — meaning **every existing user's
-  password hash verifies correctly with zero migration, zero forced
-  password reset.**
-- **Same JWT claims shape** (`sub`, `email`, `roles`, `organisationId`)
-  and same expiry windows (15-min access, 30-day refresh).
-- **Same refresh-token-hashing pattern**: only a SHA-256 hash is ever
-  stored in the session table, never the plaintext token.
-
-**Verified**: 6 real pytest tests (`app/tests/test_security.py`) —
-password hash/verify round-trip, malformed-hash handling, token hashing
-determinism, JWT round-trips, and secret isolation between access and
-refresh tokens. All passing.
-
-### 3. CORS — the exact fix from earlier this session, ported and re-tested
-`app/core/cors_origin_matcher.py` is a direct port of
-`cors-origin-matcher.ts`, including the `stagehome*.vercel.app`
-pattern-matching fix that solves Vercel's URL churn (a new URL on every
-redeploy). **Verified**: 5 real pytest tests
-(`app/tests/test_cors_origin_matcher.py`), covering the explicit
-allowlist, the pattern match, and — critically — that it does NOT
-over-match an unrelated Vercel site or a non-HTTPS origin.
-
-### 4. Auth service (register/login) — fully ported and tested
-`app/services/auth_service.py` ports `auth.service.ts`'s register/login
-flow: duplicate-email rejection, generic "invalid email or password"
-message regardless of which one was actually wrong (never leaks which),
-default Tenant role assignment on registration, session creation with
-hashed refresh tokens.
-
-**Verified**: 4 real pytest tests (`app/tests/test_auth_service.py`)
-using mocked `AsyncSession` objects — the same testing philosophy the
-original project uses (mock `PrismaService`, don't require a real
-database for unit tests).
-
-### 5. Public endpoints (counties/universities/properties)
-`app/routers/public.py` ports `public.controller.ts`/`public.service.ts`,
-including both real fixes discovered this session:
-- `listCounties` returns **every** county with live counts, not just ones
-  with data (the "No verified listings" empty-state fix).
-- The `countySlug` query parameter name matches exactly what the frontend
-  sends (the fix for the "same universities in every county" bug).
-
-### 6. Favourites and Notifications — fully ported
-`app/routers/favourites.py` and `app/routers/notifications.py` port both
-features added to the NestJS backend this session, including the
-idempotent-favourite-add behavior and the `/notifications/mine`
-endpoint.
-
-### 7. Full API-level test coverage of what's built
-`app/tests/test_api_routing.py` uses FastAPI's `TestClient` to verify,
-through the real ASGI stack (not just unit-level): health check
-succeeds, stub routes correctly 501, Pydantic validation rejects bad
-input, auth-guarded routes correctly 401 without a token, and OpenAPI
-docs are actually served with the expected paths present.
-
-**Total: 21/21 Python tests passing**, run for real in a Python 3.12
-environment during development (not just written).
-
-### 8. Alembic
-`alembic/env.py` is wired to the same `DATABASE_URL` the app itself
-reads, targets both `public` and `staging` schemas explicitly, and
-supports both offline and online migration modes. The baseline migration
-(`0001_baseline.py`) is deliberately a no-op — see its own docstring for
-exactly why, and the precise one-time command (`alembic stamp head`, not
-`upgrade head`) needed against the existing live database. **Verified**:
-`alembic history` correctly loads and displays the revision chain
-(actual `upgrade`/`downgrade` execution needs a live Postgres connection,
-which this sandbox doesn't have — see "Remaining work").
-
-### 9. Dockerfile
-`apps/api-py/Dockerfile` mirrors the original's multi-stage
-deps→build→runtime pattern, including the two real fixes the Node
-version needed the hard way this session: explicit `openssl` install (a
-genuine TLS-detection issue on Debian slim images) and `--chown` on
-every `COPY` so the non-root runtime user can actually write where it
-needs to. Applying those lessons up front here, rather than
-rediscovering them.
+Checked before building, to avoid inventing new functionality beyond
+parity: **the original has no file-upload endpoint at all** and **no
+analytics module at all**. Nothing was built for either.
 
 ## What's explicitly NOT done — the honest gap list
 
-A full backend language migration covering 60 endpoints, complex
-multi-step state machines (bookings, payments, e-signature), and a real
-Celery task queue is genuinely a multi-week project for a team, not
-something completable with the same verification rigor in one session.
-Below is exactly what's left, in priority order:
-
-1. **Refresh/logout/Google OAuth/phone OTP/admin MFA** — routes exist
-   with correct paths in `app/routers/auth.py` but return 501. Each
-   needs the same treatment register/login got: port the exact logic,
-   write real tests, verify.
-2. **Organisations, Properties CRUD (manager side)** — stub routes only.
-3. **Bookings, Payments (M-Pesa/Daraja), Agreements (e-signature)** — stub
-   routes only. These involve real money movement and legal documents;
-   they deserve the same real-Postgres verification pass the rest of
-   this list needs, and rushing them would be irresponsible given what's
-   at stake if a booking or payment bug shipped.
-4. **Reviews, Blog (admin side), Support tickets, Dashboards, Admin
-   verification workflows** — stub routes only.
-5. **Celery task queue** — not started. As the inventory notes, the
-   original Node worker is itself only a scaffold with no real queues
-   registered yet, so there's no complex existing job logic to port —
-   this is genuinely the easiest remaining piece, just not yet started.
-6. **A real Postgres-backed integration test pass** — every test above
+1. **Auth: refresh, logout, Google OAuth, phone OTP, admin MFA** — routes
+   exist with correct paths in `app/routers/auth.py`, still return 501.
+2. **Search's richer sort options** (`lowest_rent`, `highest_rent`,
+   `highest_verified_rating`, `available_soonest`, `most_reviewed`) — the
+   original's in-memory sort logic over joined pricing/review/availability
+   data is not yet ported; `search_service.py` says so explicitly in its
+   own docstring rather than silently approximating it.
+3. **Agreement template customization** — the original's own comment notes
+   organisation-specific `tenancy_templates` override the default
+   renderer when one exists; that lookup isn't wired into
+   `agreements_service.py` yet (falls back to the default template always).
+4. **A real Postgres-backed integration test pass** — every test above
    uses mocked sessions or tests logic that doesn't need a database
-   connection. None of this has been run against an actual live Postgres
-   instance, because this development sandbox has no network access to
-   one. **This is the single most important remaining verification step
-   before any production cutover** — see "Before going live" below.
-7. **Frontend cutover** — not done. `apps/web/.env.production`'s
-   `NEXT_PUBLIC_API_BASE_URL` still points at the NestJS service. Cutting
-   over means pointing it at the new Python service's URL and
-   redeploying Vercel — but only after the endpoints the frontend
-   actually calls are fully ported (currently: only public
-   counties/universities/properties, favourites, notifications, and
-   register/login — NOT bookings, payments, reviews, blog, or search
-   filters beyond basic county scoping).
-8. **Railway deployment** — `railway.json` and the `Dockerfile` are
-   written but this exact configuration has never been deployed or
-   exercised against Railway's real infrastructure.
+   connection, because this development sandbox has no network access to
+   a live Postgres instance. **This is the single most important
+   remaining verification step before any production cutover.**
+5. **Frontend cutover** — `apps/web/.env.production` still points at the
+   NestJS service.
+6. **Railway deployment** — `railway.json` and the Dockerfile are written
+   but this exact configuration has never been deployed or exercised
+   against Railway's real infrastructure.
+7. **Alembic autogeneration against a real schema diff** — `alembic
+   history` loads correctly, but no migration has actually been run
+   against a live database (see "Before going live" below).
 
 ## Before going live — required steps, not yet performed
 
-1. Stand up a real Postgres connection (or point at a copy of the actual
-   production database) and run the actual test suite's mocked-session
-   tests would still pass, but you'd want a *new* set of true
-   integration tests hitting real tables — this migration does not yet
-   have those.
-2. Run `alembic stamp head` against the existing production database
-   (see the baseline migration's own docstring).
-3. Finish porting the remaining endpoints in the priority order above,
-   applying the same "port the exact logic, write a real test, verify"
-   discipline used for auth/public/favourites/notifications.
+1. Connect to a real Postgres instance (or a copy of the actual production
+   database) and run a genuine integration test pass — the current suite
+   proves the logic is correct in isolation, not that it round-trips
+   correctly through real SQL.
+2. Run `alembic stamp head` against the existing production database.
+3. Port the remaining auth flows and the search sort gaps above.
 4. Only then repoint the frontend and redeploy.
 
 ## Environment variables

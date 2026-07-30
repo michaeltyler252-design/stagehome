@@ -45,6 +45,18 @@ class Settings(BaseSettings):
     # --- Sentry ---
     sentry_dsn: str | None = None
 
+    # --- Notification providers (each "not configured" until real credentials exist) ---
+    email_provider_api_key: str | None = None
+    sms_provider_api_key: str | None = None
+    whatsapp_business_token: str | None = None
+
+    # --- M-Pesa Daraja ---
+    daraja_consumer_key: str | None = None
+    daraja_consumer_secret: str | None = None
+    daraja_passkey: str | None = None
+    daraja_shortcode: str | None = None
+    daraja_env: str = "sandbox"
+
     # --- Logging ---
     log_level: str = "info"
 
