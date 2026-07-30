@@ -19,7 +19,7 @@ export class PublicController {
   }
 
   @Get("universities")
-  listUniversities(@Query("county") countySlug?: string) {
+  listUniversities(@Query("countySlug") countySlug?: string) {
     return this.publicService.listUniversities(countySlug);
   }
 
