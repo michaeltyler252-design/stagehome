@@ -1,8 +1,0 @@
-{
-  "importBatch": "laikipia-phase1-milestone1-audit",
-  "county": "Laikipia",
-  "note": "Raw text preserved verbatim from a user-supplied source document. Nothing here is invented — every record is SOURCE_SUPPLIED_UNVERIFIED per Part B rules 4 and 6.",
-  "records": [
-    {"university": "Laikipia University", "property": "Nyahururu Horizon Hub", "sourceFile": "user-supplied: Kenya Premium Rental Marketplace Knowledge Base", "rawTextFile": "raw/nyahururu-horizon-hub.txt", "knownIssues": ["This record has no Nearby Places section at all in the source — genuinely absent, not omitted during extraction."]}
-  ]
-}

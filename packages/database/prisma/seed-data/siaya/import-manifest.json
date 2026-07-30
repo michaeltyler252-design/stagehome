@@ -1,8 +1,0 @@
-{
-  "importBatch": "siaya-phase1-milestone1-audit",
-  "county": "Siaya",
-  "note": "Raw text preserved verbatim from a user-supplied source document. Nothing here is invented — every record is SOURCE_SUPPLIED_UNVERIFIED per Part B rules 4 and 6. This record was previously encountered nested under Nyeri's heading in an earlier document and correctly excluded from Nyeri at that time — this manifest is the confirmation that it genuinely belongs to Siaya.",
-  "records": [
-    {"university": "Jaramogi Oginga Odinga University of Science and Technology (JOOUST)", "property": "Bondo Central Residencies", "sourceFile": "user-supplied: Kenya Premium Rental Marketplace Knowledge Base", "rawTextFile": "raw/bondo-central-residencies.txt", "knownIssues": []}
-  ]
-}

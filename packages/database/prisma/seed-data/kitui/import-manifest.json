@@ -1,8 +1,0 @@
-{
-  "importBatch": "kitui-phase1-milestone1-audit",
-  "county": "Kitui",
-  "note": "Raw text preserved verbatim from a user-supplied source document. Nothing here is invented — every record is SOURCE_SUPPLIED_UNVERIFIED per Part B rules 4 and 6.",
-  "records": [
-    {"university": "South Eastern Kenya University (SEKU)", "property": "Kwa Vonza Heights", "sourceFile": "user-supplied: Kenya Premium Rental Marketplace Knowledge Base", "rawTextFile": "raw/kwa-vonza-heights.txt", "knownIssues": []}
-  ]
-}

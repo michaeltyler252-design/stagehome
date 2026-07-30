@@ -1,8 +1,0 @@
-{
-  "importBatch": "bungoma-phase1-milestone1-audit",
-  "county": "Bungoma",
-  "note": "Raw text preserved verbatim from a user-supplied source document. Nothing here is invented — every record is SOURCE_SUPPLIED_UNVERIFIED per Part B rules 4 and 6.",
-  "records": [
-    {"university": "Kibabii University (KIBU)", "property": "Kibu Boulevard Apartments", "sourceFile": "user-supplied: Kenya Premium Rental Marketplace Knowledge Base", "rawTextFile": "raw/kibu-boulevard-apartments.txt", "knownIssues": []}
-  ]
-}

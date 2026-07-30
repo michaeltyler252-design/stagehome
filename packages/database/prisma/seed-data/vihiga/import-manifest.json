@@ -1,9 +1,0 @@
-{
-  "importBatch": "vihiga-phase1-milestone1-audit",
-  "county": "Vihiga",
-  "note": "Raw text preserved verbatim from a user-supplied source document. Nothing here is invented — every record is SOURCE_SUPPLIED_UNVERIFIED per Part B rules 4 and 6.",
-  "records": [
-    {"university": "Masinde Muliro University of Science and Technology (MMUST)", "property": "Ebunangwe Heights Plaza", "sourceFile": "user-supplied: Kenya Premium Rental Marketplace Knowledge Base", "rawTextFile": "raw/ebunangwe-heights-plaza.txt", "knownIssues": []},
-    {"university": "Kaimosi Friends University", "property": "Kaimosi Academic Enclave", "sourceFile": "user-supplied: Kenya Premium Rental Marketplace Knowledge Base", "rawTextFile": "raw/kaimosi-academic-enclave.txt", "knownIssues": []}
-  ]
-}

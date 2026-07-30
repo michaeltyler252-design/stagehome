@@ -1,8 +1,0 @@
-{
-  "importBatch": "busia-phase1-milestone1-audit",
-  "county": "Busia",
-  "note": "Raw text preserved verbatim from a user-supplied source document. Nothing here is invented — every record is SOURCE_SUPPLIED_UNVERIFIED per Part B rules 4 and 6.",
-  "records": [
-    {"university": "Alupe University (AU)", "property": "Alupe Vista Apartments", "sourceFile": "user-supplied: Kenya Premium Rental Marketplace Knowledge Base", "rawTextFile": "raw/alupe-vista-apartments.txt", "knownIssues": []}
-  ]
-}
