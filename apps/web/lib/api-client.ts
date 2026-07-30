@@ -111,7 +111,7 @@ export const apiClient = {
   getCounty: (slug: string) => request<County>(`/public/counties/${slug}`),
   listUniversities: (countySlug?: string) =>
     request<UniversitySummary[]>(
-      `/public/universities${countySlug ? `?county=${encodeURIComponent(countySlug)}` : ""}`
+      `/public/universities${countySlug ? `?countySlug=${encodeURIComponent(countySlug)}` : ""}`
     ),
   getUniversity: (slug: string) => request<any>(`/public/universities/${slug}`),
   searchProperties: (params: Record<string, string | number | undefined>) => {
