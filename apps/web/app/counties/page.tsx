@@ -30,16 +30,24 @@ export default async function CountiesPage() {
         </div>
       ) : (
         <ul className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {counties.map((county) => (
-            <li key={county.slug}>
-              <Link href={`/counties/${county.slug}`} className="ticket-card block p-5 hover:shadow-md">
-                <p className="font-mono text-xs uppercase tracking-widest text-chalk/50">
-                  Phase {county.rolloutPhase ?? "\u2014"}
-                </p>
-                <p className="mt-1 font-display text-xl">{county.name}</p>
-              </Link>
-            </li>
-          ))}
+          {counties.map((county) => {
+            const hasData = (county.publishedPropertyCount ?? 0) > 0 || (county.verifiedUniversityCount ?? 0) > 0;
+            return (
+              <li key={county.slug}>
+                <Link href={`/counties/${county.slug}`} className="ticket-card block p-5 hover:shadow-md">
+                  <p className="font-mono text-xs uppercase tracking-widest text-chalk/50">
+                    Phase {county.rolloutPhase ?? "\u2014"}
+                  </p>
+                  <p className="mt-1 font-display text-xl">{county.name}</p>
+                  <p className="mt-2 text-sm text-chalk/60">
+                    {hasData
+                      ? `${county.publishedPropertyCount ?? 0} listing${county.publishedPropertyCount === 1 ? "" : "s"}, ${county.verifiedUniversityCount ?? 0} verified ${county.verifiedUniversityCount === 1 ? "university" : "universities"}`
+                      : "No listings available yet"}
+                  </p>
+                </Link>
+              </li>
+            );
+          })}
         </ul>
       )}
     </div>

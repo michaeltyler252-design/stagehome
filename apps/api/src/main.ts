@@ -6,6 +6,7 @@ import { ValidationPipe } from "@nestjs/common";
 import { AppModule } from "./app.module";
 import { StructuredLogger } from "./common/logging/structured-logger";
 import { initSentry } from "./common/logging/sentry";
+import { isAllowedOrigin } from "./common/cors-origin-matcher";
 
 async function bootstrap() {
   initSentry();
@@ -61,8 +62,26 @@ async function bootstrap() {
         "development. This default is NOT used in production (see above)."
     );
   }
+  // In addition to the explicit WEB_APP_ORIGIN allowlist above, also accept
+  // any Vercel-hosted origin matching isAllowedOrigin's pattern (see its
+  // own doc comment for the full rationale) — this is the actual fix for
+  // Vercel's URLs changing on every redeploy breaking CORS every time.
+  const explicitOrigins = webAppOrigin ? webAppOrigin.split(",") : ["http://localhost:3000"];
+
   app.enableCors({
-    origin: webAppOrigin ? webAppOrigin.split(",") : ["http://localhost:3000"],
+    origin: (origin, callback) => {
+      if (!origin) {
+        // Non-browser requests (curl, server-to-server, same-origin) have
+        // no Origin header at all — nothing to check against.
+        callback(null, true);
+        return;
+      }
+      if (isAllowedOrigin(origin, explicitOrigins)) {
+        callback(null, true);
+        return;
+      }
+      callback(new Error(`Origin ${origin} is not allowed by CORS.`), false);
+    },
     credentials: true,
   });
   app.useGlobalPipes(

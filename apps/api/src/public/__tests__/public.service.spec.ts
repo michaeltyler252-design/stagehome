@@ -112,38 +112,53 @@ describe("PublicService", () => {
   });
 
   describe("listCounties", () => {
-    it("derives visible counties from published properties and verified universities, not a static list", async () => {
-      prisma.property.findMany.mockResolvedValue([{ countyId: "county-nairobi" }]);
-      prisma.university.findMany.mockResolvedValue([{ countyId: "county-embu" }]);
+    it("returns every seeded county, each annotated with its real published-property and verified-university counts", async () => {
       prisma.county.findMany.mockResolvedValue([
         { id: "county-nairobi", name: "Nairobi City", slug: "nairobi-city", rolloutPhase: 1 },
         { id: "county-embu", name: "Embu", slug: "embu", rolloutPhase: 3 },
+        { id: "county-narok", name: "Narok", slug: "narok", rolloutPhase: 12 },
       ]);
+      prisma.property.findMany.mockResolvedValue([{ countyId: "county-nairobi" }]);
+      prisma.university.findMany.mockResolvedValue([{ countyId: "county-embu" }]);
 
-      await service.listCounties();
+      const result = await service.listCounties();
 
-      expect(prisma.property.findMany).toHaveBeenCalledWith({
-        where: { publicationStatus: "PUBLISHED" },
-        select: { countyId: true },
-        distinct: ["countyId"],
+      expect(result).toHaveLength(3);
+      expect(result.find((c: any) => c.slug === "nairobi-city")).toMatchObject({
+        publishedPropertyCount: 1,
+        verifiedUniversityCount: 0,
       });
-      expect(prisma.university.findMany).toHaveBeenCalledWith({
-        where: { verificationStatus: "VERIFIED" },
-        select: { countyId: true },
-        distinct: ["countyId"],
+      expect(result.find((c: any) => c.slug === "embu")).toMatchObject({
+        publishedPropertyCount: 0,
+        verifiedUniversityCount: 1,
       });
-      const whereArg = prisma.county.findMany.mock.calls[0][0].where;
-      expect(whereArg.id.in).toEqual(expect.arrayContaining(["county-nairobi", "county-embu"]));
+      // Narok has neither — it must still appear, not be hidden, with
+      // honest zero counts so the frontend can show "no listings yet".
+      expect(result.find((c: any) => c.slug === "narok")).toMatchObject({
+        publishedPropertyCount: 0,
+        verifiedUniversityCount: 0,
+      });
     });
 
-    it("never queries counties at all when nothing is published or verified anywhere yet", async () => {
+    it("still returns all counties (with zero counts) when nothing is published or verified anywhere yet", async () => {
+      prisma.county.findMany.mockResolvedValue([
+        { id: "county-nairobi", name: "Nairobi City", slug: "nairobi-city", rolloutPhase: 1 },
+      ]);
       prisma.property.findMany.mockResolvedValue([]);
       prisma.university.findMany.mockResolvedValue([]);
 
       const result = await service.listCounties();
 
-      expect(result).toEqual([]);
-      expect(prisma.county.findMany).not.toHaveBeenCalled();
+      expect(result).toEqual([
+        {
+          id: "county-nairobi",
+          name: "Nairobi City",
+          slug: "nairobi-city",
+          rolloutPhase: 1,
+          publishedPropertyCount: 0,
+          verifiedUniversityCount: 0,
+        },
+      ]);
     });
   });
 
@@ -155,12 +170,14 @@ describe("PublicService", () => {
       );
     });
 
-    it("throws NotFoundException for a real, seeded county that has zero published properties and zero verified universities (e.g. Narok)", async () => {
+    it("returns a real, seeded county with zero counts rather than 404ing, when it has no published properties or verified universities yet (e.g. Narok)", async () => {
       prisma.county.findUnique.mockResolvedValue({ id: "county-narok", name: "Narok", slug: "narok" });
       prisma.property.count.mockResolvedValue(0);
       prisma.university.count.mockResolvedValue(0);
 
-      await expect(service.getCountyBySlug("narok")).rejects.toBeInstanceOf(NotFoundException);
+      const result = await service.getCountyBySlug("narok");
+      expect(result.publishedPropertyCount).toBe(0);
+      expect(result.verifiedUniversityCount).toBe(0);
     });
 
     it("reports published-property and verified-university counts scoped correctly", async () => {

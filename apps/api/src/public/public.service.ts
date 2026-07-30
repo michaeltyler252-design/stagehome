@@ -11,47 +11,45 @@ export class PublicService {
   ) {}
 
   /**
-   * A county belongs on the public site only once it actually has
-   * something verified to show: a PUBLISHED property, or a VERIFIED
-   * university. This replaced a hard-coded COUNTIES_WITH_DATA slug array —
-   * that list had to be edited by hand every time a county's data cleared
-   * verification, which is exactly the "requires a code change" failure
-   * the brief asked to eliminate. Querying live status means a county
-   * appears or disappears the moment its underlying data does, with no
-   * deploy required.
+   * Returns every county with its live published-property and
+   * verified-university counts, so the frontend can show a real "No
+   * listings available yet" state for counties without live data yet,
+   * rather than hiding them from the page entirely. (Previously this
+   * endpoint only returned counties that already had verified data — see
+   * git history for that rationale — but product direction is now to list
+   * every county so people can see the full rollout picture.)
    */
-  private async listCountyIdsWithVerifiedData(): Promise<string[]> {
+  async listCounties() {
+    const counties = await this.prisma.county.findMany({
+      orderBy: { rolloutPhase: "asc" },
+      select: { id: true, name: true, slug: true, rolloutPhase: true },
+    });
+
     const [publishedProperties, verifiedUniversities] = await Promise.all([
       this.prisma.property.findMany({
         where: { publicationStatus: "PUBLISHED" },
         select: { countyId: true },
-        distinct: ["countyId"],
       }),
       this.prisma.university.findMany({
         where: { verificationStatus: "VERIFIED" },
         select: { countyId: true },
-        distinct: ["countyId"],
       }),
     ]);
 
-    return Array.from(
-      new Set([
-        ...publishedProperties.map((p: { countyId: string }) => p.countyId),
-        ...verifiedUniversities.map((u: { countyId: string }) => u.countyId),
-      ])
-    );
-  }
-
-  async listCounties() {
-    const countyIds = await this.listCountyIdsWithVerifiedData();
-    if (countyIds.length === 0) {
-      return [];
+    const propertyCountByCounty = new Map<string, number>();
+    for (const p of publishedProperties as { countyId: string }[]) {
+      propertyCountByCounty.set(p.countyId, (propertyCountByCounty.get(p.countyId) ?? 0) + 1);
     }
-    return this.prisma.county.findMany({
-      where: { id: { in: countyIds } },
-      orderBy: { rolloutPhase: "asc" },
-      select: { id: true, name: true, slug: true, rolloutPhase: true },
-    });
+    const universityCountByCounty = new Map<string, number>();
+    for (const u of verifiedUniversities as { countyId: string }[]) {
+      universityCountByCounty.set(u.countyId, (universityCountByCounty.get(u.countyId) ?? 0) + 1);
+    }
+
+    return counties.map((county: { id: string; name: string; slug: string; rolloutPhase: number | null }) => ({
+      ...county,
+      publishedPropertyCount: propertyCountByCounty.get(county.id) ?? 0,
+      verifiedUniversityCount: universityCountByCounty.get(county.id) ?? 0,
+    }));
   }
 
   async getCountyBySlug(slug: string) {
@@ -69,12 +67,9 @@ export class PublicService {
       }),
     ]);
 
-    // Same rule as listCounties(): a county with nothing verified yet isn't
-    // part of the public site, even navigated to directly by URL.
-    if (publishedPropertyCount === 0 && verifiedUniversityCount === 0) {
-      throw new NotFoundException("County not found.");
-    }
-
+    // Every county page is now reachable directly — a county with nothing
+    // verified yet just shows an honest "no listings yet" state instead of
+    // a 404.
     return { ...county, publishedPropertyCount, verifiedUniversityCount };
   }
 
