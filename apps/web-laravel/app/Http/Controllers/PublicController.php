@@ -13,6 +13,7 @@ class PublicController extends Controller
     {
         try {
             $universities = $this->api->listUniversities();
+            $universities = is_array($universities) ? $universities : [];
         } catch (\Throwable $e) {
             \Log::error('Failed to load universities for homepage: '.$e->getMessage());
             $universities = [];
@@ -20,6 +21,7 @@ class PublicController extends Controller
 
         try {
             $blogPosts = $this->api->listBlogPosts();
+            $blogPosts = is_array($blogPosts) ? $blogPosts : [];
         } catch (\Throwable $e) {
             \Log::error('Failed to load blog posts for homepage: '.$e->getMessage());
             $blogPosts = [];
