@@ -8,7 +8,7 @@ explicit, logged step — never automatic."""
 
 from datetime import datetime
 
-from sqlalchemy import ForeignKey, String
+from sqlalchemy import DateTime, ForeignKey, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, cuid
@@ -23,7 +23,7 @@ class RawImportBatch(Base):
     checksum: Mapped[str] = mapped_column(String)
     county: Mapped[str | None] = mapped_column(String, default=None)
     imported_by: Mapped[str | None] = mapped_column(String, default=None)
-    created_at: Mapped[datetime]
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     property_records: Mapped[list["RawPropertyRecord"]] = relationship(back_populates="batch")
     university_records: Mapped[list["RawUniversityRecord"]] = relationship(back_populates="batch")
@@ -41,7 +41,7 @@ class RawPropertyRecord(Base):
     raw_text: Mapped[str] = mapped_column(String)
     conflict_status: Mapped[str] = mapped_column(String, default="NONE")
     promoted_property_id: Mapped[str | None] = mapped_column(String, default=None)
-    created_at: Mapped[datetime]
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     batch: Mapped["RawImportBatch"] = relationship(back_populates="property_records")
 
@@ -57,7 +57,7 @@ class RawUniversityRecord(Base):
     source_file: Mapped[str | None] = mapped_column(String, default=None)
     raw_excerpt: Mapped[str | None] = mapped_column(String, default=None)
     promoted_university_id: Mapped[str | None] = mapped_column(String, default=None)
-    created_at: Mapped[datetime]
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     batch: Mapped["RawImportBatch"] = relationship(back_populates="university_records")
 
@@ -71,4 +71,4 @@ class RawFieldIssue(Base):
     record_type: Mapped[str] = mapped_column(String)
     record_ref: Mapped[str] = mapped_column(String)
     issue: Mapped[str] = mapped_column(String)
-    created_at: Mapped[datetime]
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

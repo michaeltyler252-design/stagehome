@@ -4,7 +4,7 @@
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import Boolean, ForeignKey, JSON, Numeric, String, UniqueConstraint
+from sqlalchemy import DateTime, Boolean, ForeignKey, JSON, Numeric, String, UniqueConstraint, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, PublicationStatus, cuid
@@ -20,7 +20,7 @@ class Favourite(Base):
     id: Mapped[str] = mapped_column(String, primary_key=True, default=cuid)
     user_id: Mapped[str] = mapped_column(ForeignKey("public.users.id"))
     property_id: Mapped[str] = mapped_column(ForeignKey("public.properties.id"))
-    created_at: Mapped[datetime]
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     property: Mapped["Property"] = relationship()  # noqa: F821
 
@@ -32,7 +32,7 @@ class SavedSearch(Base):
     id: Mapped[str] = mapped_column(String, primary_key=True, default=cuid)
     user_id: Mapped[str] = mapped_column(ForeignKey("public.users.id"))
     filters_json: Mapped[dict] = mapped_column(JSON, nullable=False)
-    created_at: Mapped[datetime]
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     alerts: Mapped[list["SearchAlert"]] = relationship(back_populates="saved_search")
 
@@ -44,7 +44,7 @@ class SearchAlert(Base):
     id: Mapped[str] = mapped_column(String, primary_key=True, default=cuid)
     saved_search_id: Mapped[str] = mapped_column(ForeignKey("public.saved_searches.id"))
     frequency: Mapped[str] = mapped_column(String, default="DAILY")
-    last_sent_at: Mapped[datetime | None] = mapped_column(default=None)
+    last_sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
 
     saved_search: Mapped["SavedSearch"] = relationship(back_populates="alerts")
 
@@ -59,7 +59,7 @@ class Review(Base):
     booking_id: Mapped[str] = mapped_column(ForeignKey("public.bookings.id"))
     user_id: Mapped[str] = mapped_column(ForeignKey("public.users.id"))
     overall_rating: Mapped[Decimal] = mapped_column(Numeric(2, 1))
-    created_at: Mapped[datetime]
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     categories: Mapped[list["ReviewCategory"]] = relationship(back_populates="review")
     responses: Mapped[list["ReviewResponse"]] = relationship(back_populates="review")
@@ -85,7 +85,7 @@ class ReviewResponse(Base):
     review_id: Mapped[str] = mapped_column(ForeignKey("public.reviews.id"))
     responder_id: Mapped[str | None] = mapped_column(String, default=None)
     body: Mapped[str] = mapped_column(String)
-    created_at: Mapped[datetime]
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     review: Mapped["Review"] = relationship(back_populates="responses")
 
@@ -103,9 +103,9 @@ class BlogPost(Base):
     author_name: Mapped[str] = mapped_column(String)
     category: Mapped[str | None] = mapped_column(String, default=None)
     publication_status: Mapped[PublicationStatus] = mapped_column(default=PublicationStatus.DRAFT)
-    published_at: Mapped[datetime | None] = mapped_column(default=None)
-    created_at: Mapped[datetime]
-    updated_at: Mapped[datetime]
+    published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
 
 class SupportTicket(Base):
@@ -117,8 +117,8 @@ class SupportTicket(Base):
     priority: Mapped[str] = mapped_column(String, default="P4")
     status: Mapped[str] = mapped_column(String, default="OPEN")
     subject: Mapped[str] = mapped_column(String)
-    created_at: Mapped[datetime]
-    updated_at: Mapped[datetime]
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
     messages: Mapped[list["SupportMessage"]] = relationship(back_populates="ticket")
 
@@ -131,7 +131,7 @@ class SupportMessage(Base):
     ticket_id: Mapped[str] = mapped_column(ForeignKey("public.support_tickets.id"))
     author_id: Mapped[str | None] = mapped_column(String, default=None)
     body: Mapped[str] = mapped_column(String)
-    created_at: Mapped[datetime]
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     ticket: Mapped["SupportTicket"] = relationship(back_populates="messages")
 
@@ -145,7 +145,7 @@ class MaintenanceRequest(Base):
     reported_by: Mapped[str | None] = mapped_column(String, default=None)
     description: Mapped[str] = mapped_column(String)
     status: Mapped[str] = mapped_column(String, default="OPEN")
-    created_at: Mapped[datetime]
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
 class Notification(Base):
@@ -157,8 +157,8 @@ class Notification(Base):
     channel: Mapped[str] = mapped_column(String)  # email | sms | in_app | whatsapp
     type: Mapped[str] = mapped_column(String)
     payload_json: Mapped[dict | None] = mapped_column(JSON, default=None)
-    sent_at: Mapped[datetime | None] = mapped_column(default=None)
-    created_at: Mapped[datetime]
+    sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
 class NotificationPreference(Base):
@@ -182,7 +182,7 @@ class AuditLog(Base):
     entity_type: Mapped[str | None] = mapped_column(String, index=True, default=None)
     entity_id: Mapped[str | None] = mapped_column(String, index=True, default=None)
     metadata_json: Mapped[dict | None] = mapped_column(JSON, default=None)
-    created_at: Mapped[datetime]
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
 class SecurityEvent(Base):
@@ -194,7 +194,7 @@ class SecurityEvent(Base):
     user_id: Mapped[str | None] = mapped_column(String, default=None)
     ip_address: Mapped[str | None] = mapped_column(String, default=None)
     metadata_json: Mapped[dict | None] = mapped_column(JSON, default=None)
-    created_at: Mapped[datetime]
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
 class AdminNote(Base):
@@ -206,4 +206,4 @@ class AdminNote(Base):
     subject_id: Mapped[str] = mapped_column(String, index=True)
     author_id: Mapped[str | None] = mapped_column(String, default=None)
     body: Mapped[str] = mapped_column(String)
-    created_at: Mapped[datetime]
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

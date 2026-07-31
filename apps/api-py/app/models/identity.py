@@ -3,7 +3,7 @@
 
 from datetime import datetime
 
-from sqlalchemy import Boolean, ForeignKey, String, UniqueConstraint
+from sqlalchemy import DateTime, Boolean, ForeignKey, String, UniqueConstraint, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin, UserAccountStatus, VerificationStatus, cuid
@@ -20,8 +20,8 @@ class User(Base):
     email_verified: Mapped[bool] = mapped_column(Boolean, default=False)
     phone_verified: Mapped[bool] = mapped_column(Boolean, default=False)
     status: Mapped[UserAccountStatus] = mapped_column(default=UserAccountStatus.PENDING_VERIFICATION)
-    created_at: Mapped[datetime]
-    updated_at: Mapped[datetime]
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
     profile: Mapped["UserProfile | None"] = relationship(back_populates="user", uselist=False)
     sessions: Mapped[list["UserSession"]] = relationship(back_populates="user")
@@ -39,8 +39,8 @@ class UserProfile(Base):
     avatar_url: Mapped[str | None] = mapped_column(String, default=None)
     student_id_verified: Mapped[bool] = mapped_column(Boolean, default=False)
     institution_name: Mapped[str | None] = mapped_column(String, default=None)
-    created_at: Mapped[datetime]
-    updated_at: Mapped[datetime]
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
     user: Mapped["User"] = relationship(back_populates="profile")
 
@@ -56,9 +56,9 @@ class UserSession(Base):
     refresh_token: Mapped[str] = mapped_column(String, unique=True)
     ip_address: Mapped[str | None] = mapped_column(String, default=None)
     user_agent: Mapped[str | None] = mapped_column(String, default=None)
-    expires_at: Mapped[datetime]
-    revoked_at: Mapped[datetime | None] = mapped_column(default=None)
-    created_at: Mapped[datetime]
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     user: Mapped["User"] = relationship(back_populates="sessions")
 
@@ -71,8 +71,8 @@ class UserDevice(Base):
     user_id: Mapped[str] = mapped_column(ForeignKey("public.users.id"))
     device_name: Mapped[str | None] = mapped_column(String, default=None)
     push_token: Mapped[str | None] = mapped_column(String, default=None)
-    last_seen_at: Mapped[datetime | None] = mapped_column(default=None)
-    created_at: Mapped[datetime]
+    last_seen_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
 class Role(Base):
@@ -121,7 +121,7 @@ class UserRole(Base):
     organisation_id: Mapped[str | None] = mapped_column(
         ForeignKey("public.organisations.id"), default=None
     )
-    created_at: Mapped[datetime]
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     user: Mapped["User"] = relationship(back_populates="roles")
     role: Mapped["Role"] = relationship(back_populates="user_roles")
@@ -151,7 +151,7 @@ class OrganisationMember(Base):
     organisation_id: Mapped[str] = mapped_column(ForeignKey("public.organisations.id"))
     user_id: Mapped[str] = mapped_column(ForeignKey("public.users.id"))
     title: Mapped[str | None] = mapped_column(String, default=None)
-    created_at: Mapped[datetime]
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     organisation: Mapped["Organisation"] = relationship(back_populates="members")
 
@@ -178,7 +178,7 @@ class IdentityDocument(Base):
     verification_case_id: Mapped[str | None] = mapped_column(
         ForeignKey("public.verification_cases.id"), default=None
     )
-    created_at: Mapped[datetime]
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
 class VerificationCase(Base, TimestampMixin):
@@ -190,7 +190,7 @@ class VerificationCase(Base, TimestampMixin):
     subject_id: Mapped[str] = mapped_column(String, index=True)
     status: Mapped[VerificationStatus] = mapped_column(default=VerificationStatus.PENDING)
     assigned_to: Mapped[str | None] = mapped_column(String, default=None)
-    resolved_at: Mapped[datetime | None] = mapped_column(default=None)
+    resolved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
     notes: Mapped[str | None] = mapped_column(String, default=None)
 
 
@@ -206,4 +206,4 @@ class PayoutAccount(Base):
     method: Mapped[str] = mapped_column(String)
     masked_details: Mapped[str] = mapped_column(String)
     verified: Mapped[bool] = mapped_column(Boolean, default=False)
-    created_at: Mapped[datetime]
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

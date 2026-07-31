@@ -4,7 +4,7 @@ schema.prisma's "PROPERTY INVENTORY" and "COMMERCIAL TERMS" sections."""
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import Boolean, Float, ForeignKey, Integer, JSON, Numeric, String, UniqueConstraint
+from sqlalchemy import DateTime, Boolean, Float, ForeignKey, Integer, JSON, Numeric, String, UniqueConstraint, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin, VerificationMixin, cuid
@@ -76,7 +76,7 @@ class BedOrSpace(Base):
     unit_id: Mapped[str] = mapped_column(ForeignKey("public.units.id"))
     label: Mapped[str | None] = mapped_column(String, default=None)
     is_vacant: Mapped[bool] = mapped_column(Boolean, default=True)
-    created_at: Mapped[datetime]
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     unit: Mapped["Unit"] = relationship(back_populates="beds_or_spaces")
 
@@ -159,8 +159,8 @@ class Media(Base):
     category: Mapped[str | None] = mapped_column(String, default=None)
     storage_key: Mapped[str] = mapped_column(String)
     alt_text: Mapped[str | None] = mapped_column(String, default=None)
-    processed_at: Mapped[datetime | None] = mapped_column(default=None)
-    created_at: Mapped[datetime]
+    processed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     property: Mapped["Property"] = relationship(back_populates="media")
 
@@ -172,7 +172,7 @@ class FloorPlan(Base):
     id: Mapped[str] = mapped_column(String, primary_key=True, default=cuid)
     property_id: Mapped[str] = mapped_column(ForeignKey("public.properties.id"))
     storage_key: Mapped[str] = mapped_column(String)
-    created_at: Mapped[datetime]
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
 class VirtualTour(Base):
@@ -183,7 +183,7 @@ class VirtualTour(Base):
     property_id: Mapped[str] = mapped_column(ForeignKey("public.properties.id"))
     provider: Mapped[str | None] = mapped_column(String, default=None)
     url: Mapped[str | None] = mapped_column(String, default=None)
-    created_at: Mapped[datetime]
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
 class PropertyCampus(Base):
@@ -202,7 +202,7 @@ class PropertyCampus(Base):
     driving_minutes: Mapped[int | None] = mapped_column(Integer, default=None)
     public_transport_minutes: Mapped[int | None] = mapped_column(Integer, default=None)
     distance_source: Mapped[str | None] = mapped_column(String, default="SOURCE_SUPPLIED")
-    distance_verified_at: Mapped[datetime | None] = mapped_column(default=None)
+    distance_verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
 
 
 class AvailabilityPeriod(Base):
@@ -211,12 +211,12 @@ class AvailabilityPeriod(Base):
 
     id: Mapped[str] = mapped_column(String, primary_key=True, default=cuid)
     property_id: Mapped[str] = mapped_column(ForeignKey("public.properties.id"))
-    available_from: Mapped[datetime | None] = mapped_column(default=None)
+    available_from: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
     available_unit_count: Mapped[int | None] = mapped_column(Integer, default=None)
     verification_status: Mapped[str] = mapped_column(String, default="EXPIRED")
-    last_confirmed_at: Mapped[datetime | None] = mapped_column(default=None)
-    created_at: Mapped[datetime]
-    updated_at: Mapped[datetime]
+    last_confirmed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
 
 class AvailabilitySnapshot(Base):
@@ -225,7 +225,7 @@ class AvailabilitySnapshot(Base):
 
     id: Mapped[str] = mapped_column(String, primary_key=True, default=cuid)
     availability_period_id: Mapped[str] = mapped_column(ForeignKey("public.availability_periods.id"))
-    captured_at: Mapped[datetime]
+    captured_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     available_unit_count: Mapped[int | None] = mapped_column(Integer, default=None)
 
 
@@ -240,7 +240,7 @@ class ListingVersion(Base):
     property_id: Mapped[str] = mapped_column(ForeignKey("public.properties.id"))
     version_number: Mapped[int] = mapped_column(Integer)
     snapshot_json: Mapped[dict] = mapped_column(JSON, nullable=False)
-    created_at: Mapped[datetime]
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     created_by: Mapped[str | None] = mapped_column(String, default=None)
 
 
@@ -252,8 +252,8 @@ class ListingVerificationBadge(Base):
     property_id: Mapped[str] = mapped_column(ForeignKey("public.properties.id"))
     badge_type: Mapped[str] = mapped_column(String)
     status: Mapped[str] = mapped_column(String, default="UNVERIFIED")
-    issued_at: Mapped[datetime | None] = mapped_column(default=None)
-    expires_at: Mapped[datetime | None] = mapped_column(default=None)
+    issued_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
 
 
 class ListingReport(Base):
@@ -266,7 +266,7 @@ class ListingReport(Base):
     reason: Mapped[str] = mapped_column(String)
     details: Mapped[str | None] = mapped_column(String, default=None)
     status: Mapped[str] = mapped_column(String, default="OPEN")
-    created_at: Mapped[datetime]
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
 class PricingRule(Base):
@@ -279,9 +279,9 @@ class PricingRule(Base):
     rent_amount_min: Mapped[Decimal] = mapped_column(Numeric(10, 2))
     rent_amount_max: Mapped[Decimal | None] = mapped_column(Numeric(10, 2), default=None)
     currency: Mapped[str] = mapped_column(String, default="KES")
-    effective_from: Mapped[datetime]
-    effective_to: Mapped[datetime | None] = mapped_column(default=None)
-    created_at: Mapped[datetime]
+    effective_from: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    effective_to: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     property: Mapped["Property"] = relationship(back_populates="pricing_rules")
 
@@ -334,7 +334,7 @@ class TenancyTemplate(Base):
 
     id: Mapped[str] = mapped_column(String, primary_key=True, default=cuid)
     name: Mapped[str] = mapped_column(String)
-    created_at: Mapped[datetime]
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
 class TenancyTemplateVersion(Base):
@@ -348,4 +348,4 @@ class TenancyTemplateVersion(Base):
     template_id: Mapped[str] = mapped_column(ForeignKey("public.tenancy_templates.id"))
     version: Mapped[int] = mapped_column(Integer)
     body_markdown: Mapped[str] = mapped_column(String)
-    created_at: Mapped[datetime]
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

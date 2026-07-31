@@ -3,7 +3,7 @@
 
 from datetime import datetime
 
-from sqlalchemy import Float, ForeignKey, Integer, String, UniqueConstraint
+from sqlalchemy import DateTime, Float, ForeignKey, Integer, String, UniqueConstraint, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin, VerificationMixin, cuid
@@ -103,7 +103,7 @@ class UniversityAlias(Base):
     id: Mapped[str] = mapped_column(String, primary_key=True, default=cuid)
     university_id: Mapped[str] = mapped_column(ForeignKey("public.universities.id"))
     alias: Mapped[str] = mapped_column(String)
-    created_at: Mapped[datetime]
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     university: Mapped["University"] = relationship(back_populates="aliases")
 
@@ -136,7 +136,7 @@ class CampusEstate(Base):
     id: Mapped[str] = mapped_column(String, primary_key=True, default=cuid)
     campus_id: Mapped[str] = mapped_column(ForeignKey("public.campuses.id"))
     estate_id: Mapped[str] = mapped_column(ForeignKey("public.estates.id"))
-    created_at: Mapped[datetime]
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
 class PointOfInterest(Base, VerificationMixin, TimestampMixin):
@@ -168,7 +168,7 @@ class InternetProvider(Base):
     id: Mapped[str] = mapped_column(String, primary_key=True, default=cuid)
     name: Mapped[str] = mapped_column(String, unique=True)
     technology: Mapped[str | None] = mapped_column(String, default=None)
-    created_at: Mapped[datetime]
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
 class SourceRecord(Base):
@@ -181,7 +181,7 @@ class SourceRecord(Base):
     entity_id: Mapped[str | None] = mapped_column(String, index=True, default=None)
     raw_excerpt: Mapped[str | None] = mapped_column(String, default=None)
     import_batch: Mapped[str | None] = mapped_column(String, default=None)
-    created_at: Mapped[datetime]
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
 class VerificationEvent(Base):
@@ -200,4 +200,4 @@ class VerificationEvent(Base):
     performed_by: Mapped[str | None] = mapped_column(String, default=None)
     evidence_url: Mapped[str | None] = mapped_column(String, default=None)
     notes: Mapped[str | None] = mapped_column(String, default=None)
-    created_at: Mapped[datetime]
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
