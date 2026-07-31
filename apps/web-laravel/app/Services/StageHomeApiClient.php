@@ -23,7 +23,7 @@ class StageHomeApiClient
     private function client()
     {
         $token = Session::get('access_token');
-        $request = Http::baseUrl($this->baseUrl)->acceptJson();
+        $request = Http::baseUrl($this->baseUrl)->acceptJson()->timeout(10);
         if ($token) {
             $request = $request->withToken($token);
         }

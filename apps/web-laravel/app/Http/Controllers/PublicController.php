@@ -11,9 +11,23 @@ class PublicController extends Controller
 
     public function home()
     {
+        try {
+            $universities = $this->api->listUniversities();
+        } catch (\Throwable $e) {
+            \Log::error('Failed to load universities for homepage: '.$e->getMessage());
+            $universities = [];
+        }
+
+        try {
+            $blogPosts = $this->api->listBlogPosts();
+        } catch (\Throwable $e) {
+            \Log::error('Failed to load blog posts for homepage: '.$e->getMessage());
+            $blogPosts = [];
+        }
+
         return view('home', [
-            'universities' => $this->api->listUniversities(),
-            'blogPosts' => $this->api->listBlogPosts(),
+            'universities' => $universities,
+            'blogPosts' => $blogPosts,
         ]);
     }
 
