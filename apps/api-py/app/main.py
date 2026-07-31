@@ -4,8 +4,10 @@ Direct port of apps/api/src/main.ts's bootstrap() function.
 
 import logging
 
+import sentry_sdk
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
+from sentry_sdk.integrations.fastapi import FastApiIntegration
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -45,6 +47,20 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Production-readiness audit finding: sentry-sdk was a listed dependency
+# and SENTRY_DSN a documented environment variable, but Sentry was never
+# actually initialized anywhere — error tracking was completely
+# non-functional despite appearing available. Same pattern as every
+# other optional integration in this project: only activates when a
+# real DSN is configured, silent no-op otherwise (sentry_sdk.init with
+# no dsn is itself a safe no-op, but this makes the "not configured"
+# state explicit rather than relying on that implicitly).
+if settings.sentry_dsn:
+    sentry_sdk.init(dsn=settings.sentry_dsn, integrations=[FastApiIntegration()], traces_sample_rate=0.1)
+    logger.info("Sentry error tracking initialized.")
+else:
+    logger.info("SENTRY_DSN not set — error tracking disabled (errors are still logged locally).")
+
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     """Equivalent of helmet() in the original — same CSP/HSTS-style
@@ -66,6 +82,8 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
             response: Response = await call_next(request)
         except Exception as exc:
             logger.error("Unhandled exception on %s %s", request.method, request.url.path, exc_info=exc)
+            if settings.sentry_dsn:
+                sentry_sdk.capture_exception(exc)
             return JSONResponse(status_code=500, content={"detail": "An unexpected error occurred."})
 
         response.headers["X-Content-Type-Options"] = "nosniff"
