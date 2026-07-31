@@ -46,6 +46,6 @@ WORKDIR /repo/apps/api-py
 USER appuser
 EXPOSE 4000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
-  CMD python3 -c "import urllib.request; urllib.request.urlopen('http://localhost:4000/api/v1/health').read()" || exit 1
+  CMD sh -c 'python3 -c "import urllib.request; urllib.request.urlopen(\"http://localhost:${PORT:-${API_PORT:-4000}}/api/v1/health\").read()"' || exit 1
 
 CMD ["sh", "-c", "exec uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-${API_PORT:-4000}}"]

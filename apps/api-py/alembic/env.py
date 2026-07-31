@@ -34,8 +34,14 @@ def include_object(object, name, type_, reflected, compare_to):
 
 
 def run_migrations_offline() -> None:
+    """Offline mode never opens a real database connection (it renders
+    SQL statements to be run elsewhere), so the schema= query param bug
+    that broke online-mode asyncpg connections never crashed this path.
+    Still, using the same normalized URL as run_migrations_online() below
+    is the correct, consistent choice — found during a configuration
+    audit and fixed here rather than left as a latent inconsistency."""
     context.configure(
-        url=settings.database_url,
+        url=settings.database_url_async,
         target_metadata=target_metadata,
         literal_binds=True,
         include_schemas=True,
