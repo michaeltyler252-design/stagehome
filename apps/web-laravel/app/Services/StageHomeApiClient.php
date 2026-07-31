@@ -353,4 +353,10 @@ class StageHomeApiClient
     {
         return $this->baseUrl.'/auth/google';
     }
+
+    public function googleExchange(string $code): array
+    {
+        $response = $this->client()->post('/auth/google/exchange', ['code' => $code]);
+        return ['ok' => $response->successful(), 'status' => $response->status(), 'body' => $response->json()];
+    }
 }

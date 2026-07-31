@@ -4,7 +4,7 @@
 > Python + Laravel stack only:
 > - **`apps/api-py`** — FastAPI/SQLAlchemy/PostgreSQL/Redis/Celery backend.
 >   See `apps/api-py/MIGRATION.md` for exactly what's ported and tested
->   (39 real tests passing) versus what's still in progress.
+>   (60 real tests passing) versus what's still in progress.
 > - **`apps/web-laravel`** — Laravel 11/PHP 8.3 frontend, consuming the
 >   FastAPI backend over HTTP. See `apps/web-laravel/MIGRATION_LARAVEL.md`
 >   for an equally honest disclosure: this code is syntax-verified and

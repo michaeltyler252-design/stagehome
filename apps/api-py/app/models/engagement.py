@@ -3,11 +3,15 @@
 
 from datetime import datetime
 from decimal import Decimal
+from typing import TYPE_CHECKING
 
 from sqlalchemy import DateTime, Boolean, ForeignKey, JSON, Numeric, String, UniqueConstraint, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, PublicationStatus, cuid
+
+if TYPE_CHECKING:
+    from app.models.properties import Property
 
 
 class Favourite(Base):
@@ -22,7 +26,7 @@ class Favourite(Base):
     property_id: Mapped[str] = mapped_column(ForeignKey("public.properties.id"))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
-    property: Mapped["Property"] = relationship()  # noqa: F821
+    property: Mapped["Property"] = relationship()
 
 
 class SavedSearch(Base):

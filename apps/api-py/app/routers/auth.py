@@ -117,15 +117,37 @@ async def google_login(request: Request):
     return await oauth.google.authorize_redirect(request, redirect_uri)
 
 
-@router.get("/google/callback", response_model=AuthResponse, name="google_callback")
+@router.get("/google/callback", name="google_callback")
 async def google_callback(request: Request, db: AsyncSession = Depends(get_db)):
+    """
+    Real bug found and fixed during the architecture audit: this endpoint
+    used to return AuthResponse (raw JSON tokens) directly. But Google
+    redirects the user's browser straight to THIS FastAPI endpoint, not
+    back to Laravel — so Laravel's session (where every other auth flow
+    in this project stores tokens) would never have received them; the
+    browser would just show a bare JSON blob on the API's own domain.
+
+    Fixed the same way any API-plus-separate-frontend OAuth flow has to:
+    generate a short-lived, one-time exchange code, store the real tokens
+    against it in Redis (same pattern already used for OTP codes and
+    booking-hold locks), and redirect the browser to the frontend with
+    just that code — never with the tokens themselves in the URL, where
+    they'd leak into browser history and referrer headers. The frontend
+    then calls POST /auth/google/exchange once, server-to-server, to
+    trade the code for the real tokens.
+    """
+    from app.core.config import settings
+    from app.core.redis_client import get_redis_client
+    from app.core.security import hash_token, sign_access_token, sign_refresh_token
+    from app.models import UserSession
     from app.services.google_oauth_service import handle_callback
+    from datetime import datetime, timedelta, timezone
+    from fastapi.responses import RedirectResponse
+    import json
+    import uuid
 
     user = await handle_callback(db, request)
     roles = await auth_service.load_role_names(db, user.id)
-    from app.core.security import sign_access_token, sign_refresh_token, hash_token
-    from app.models import UserSession
-    from datetime import datetime, timedelta, timezone
 
     access_token = sign_access_token(user.id, user.email, roles)
     refresh_token, session_id = sign_refresh_token(user.id)
@@ -135,8 +157,45 @@ async def google_callback(request: Request, db: AsyncSession = Depends(get_db)):
     ))
     await db.commit()
 
+    exchange_code = uuid.uuid4().hex
+    redis_client = get_redis_client()
+    await redis_client.set(
+        f"oauth-exchange:{exchange_code}",
+        json.dumps({
+            "access_token": access_token,
+            "refresh_token": refresh_token,
+            "user": {"id": user.id, "email": user.email, "phone": user.phone, "roles": roles},
+        }),
+        ex=60,  # one-time, short-lived — the frontend must exchange it within 60 seconds
+        nx=True,
+    )
+
+    frontend_origin = (settings.web_app_origin or "http://localhost:8000").split(",")[0]
+    return RedirectResponse(url=f"{frontend_origin}/auth/google/callback?code={exchange_code}")
+
+
+class GoogleExchangeBody(BaseModel):
+    code: str
+
+
+@router.post("/google/exchange", response_model=AuthResponse)
+async def google_exchange(body: GoogleExchangeBody):
+    """The second half of the fix above: the frontend calls this once,
+    server-to-server, with the one-time code from the redirect — trading
+    it for the real tokens. The code is deleted on first use (GETDEL),
+    so it can never be replayed even if it leaked somehow."""
+    from app.core.redis_client import get_redis_client
+    import json
+
+    redis_client = get_redis_client()
+    key = f"oauth-exchange:{body.code}"
+    raw = await redis_client.getdel(key)
+    if raw is None:
+        raise HTTPException(status_code=400, detail="This sign-in link has expired or was already used. Please sign in with Google again.")
+
+    data = json.loads(raw)
     return AuthResponse(
-        access_token=access_token,
-        refresh_token=refresh_token,
-        user=UserOut(id=user.id, email=user.email, phone=user.phone, roles=roles),
+        access_token=data["access_token"],
+        refresh_token=data["refresh_token"],
+        user=UserOut(**data["user"]),
     )

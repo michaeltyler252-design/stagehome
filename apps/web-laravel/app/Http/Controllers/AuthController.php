@@ -76,6 +76,25 @@ class AuthController extends Controller
         return redirect('/');
     }
 
+    public function googleCallback(Request $request)
+    {
+        $code = $request->query('code');
+        if (! $code) {
+            return redirect('/sign-in')->withErrors(['email' => 'Google sign-in did not return a valid code.']);
+        }
+
+        $result = $this->api->googleExchange($code);
+        if (! $result['ok']) {
+            return redirect('/sign-in')->withErrors(['email' => $result['body']['detail'] ?? 'Google sign-in failed.']);
+        }
+
+        Session::put('access_token', $result['body']['access_token']);
+        Session::put('refresh_token', $result['body']['refresh_token']);
+        Session::put('user', $result['body']['user']);
+
+        return redirect('/dashboard');
+    }
+
     public function showVerifyPhone()
     {
         if (! Session::has('access_token')) {

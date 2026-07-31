@@ -29,6 +29,7 @@ Route::post('/sign-up', [AuthController::class, 'register']);
 Route::get('/sign-in', [AuthController::class, 'showLogin'])->name('login');
 Route::post('/sign-in', [AuthController::class, 'login']);
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+Route::get('/auth/google/callback', [AuthController::class, 'googleCallback'])->name('auth.google.callback');
 Route::get('/verify-phone', [AuthController::class, 'showVerifyPhone'])->name('auth.verify-phone');
 Route::post('/verify-phone/request', [AuthController::class, 'requestOtp'])->name('auth.otp.request');
 Route::post('/verify-phone/verify', [AuthController::class, 'verifyOtp'])->name('auth.otp.verify');
