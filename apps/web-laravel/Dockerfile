@@ -25,21 +25,21 @@ COPY apps/web-laravel ./
 RUN mkdir -p bootstrap/cache storage/framework/{sessions,views,cache} storage/logs \
     && composer dump-autoload --optimize --no-dev
 
-FROM php:8.3-cli AS runtime
-RUN apt-get update && apt-get install -y --no-install-recommends libpq-dev ca-certificates \
+FROM php:8.3-fpm AS runtime
+RUN apt-get update && apt-get install -y --no-install-recommends libpq-dev ca-certificates nginx gettext-base \
     && docker-php-ext-install pdo pdo_pgsql \
     && apt-get purge -y --auto-remove libpq-dev \
     && apt-get install -y --no-install-recommends libpq5 \
-    && rm -rf /var/lib/apt/lists/* \
-    && useradd --system --uid 1001 --home /home/appuser --shell /bin/sh appuser \
-    && mkdir -p /home/appuser
-ENV HOME=/home/appuser
+    && rm -rf /var/lib/apt/lists/*
 WORKDIR /repo/apps/web-laravel
 
-COPY --from=build --chown=appuser:appuser /repo/apps/web-laravel ./
+COPY --chown=www-data:www-data --from=build /repo/apps/web-laravel ./
 RUN mkdir -p storage/framework/{sessions,views,cache} storage/logs bootstrap/cache \
-    && chown -R appuser:appuser storage bootstrap/cache
+    && chown -R www-data:www-data storage bootstrap/cache
 
-USER appuser
-EXPOSE 8000
-CMD ["sh", "-c", "exec php artisan serve --host=0.0.0.0 --port=${PORT:-8000}"]
+COPY apps/web-laravel/docker/nginx.conf.template /etc/nginx/nginx.conf.template
+COPY apps/web-laravel/docker/start.sh /start.sh
+RUN chmod +x /start.sh
+
+EXPOSE 8080
+CMD ["/start.sh"]
