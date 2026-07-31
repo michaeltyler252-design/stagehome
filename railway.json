@@ -5,7 +5,7 @@
     "dockerfilePath": "apps/api-py/Dockerfile"
   },
   "deploy": {
-    "startCommand": "uvicorn app.main:app --host 0.0.0.0 --port ${API_PORT:-4000}",
+    "startCommand": "uvicorn app.main:app --host 0.0.0.0 --port $PORT",
     "preDeployCommand": "alembic upgrade head",
     "healthcheckPath": "/api/v1/health",
     "healthcheckTimeout": 120,
