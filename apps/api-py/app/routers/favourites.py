@@ -3,7 +3,7 @@ favourites.service.ts."""
 
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import delete, select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -52,10 +52,18 @@ async def remove_favourite(
 
 @router.get("/favourites/mine")
 async def list_my_favourites(
+    limit: int = Query(default=50, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
     user: AuthenticatedUser = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     favourites = (
-        await db.execute(select(Favourite).where(Favourite.user_id == user.user_id))
+        await db.execute(
+            select(Favourite)
+            .where(Favourite.user_id == user.user_id)
+            .order_by(Favourite.created_at.desc())
+            .limit(limit)
+            .offset(offset)
+        )
     ).scalars().all()
     return [{"id": f.id, "propertyId": f.property_id, "createdAt": f.created_at} for f in favourites]

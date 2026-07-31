@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -103,8 +103,10 @@ async def cancel_booking(
 
 @router.get("/bookings/mine")
 async def list_mine(
+    limit: int = Query(default=50, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
     user: AuthenticatedUser = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    bookings = await bookings_service.list_my_bookings(db, user.user_id)
+    bookings = await bookings_service.list_my_bookings(db, user.user_id, limit, offset)
     return [_serialize_booking(b) for b in bookings]

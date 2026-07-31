@@ -192,6 +192,8 @@ async def cancel_booking(db: AsyncSession, user: AuthenticatedUser, booking_id: 
     return booking
 
 
-async def list_my_bookings(db: AsyncSession, user_id: str) -> list[Booking]:
-    result = await db.execute(select(Booking).where(Booking.user_id == user_id).order_by(Booking.created_at.desc()))
+async def list_my_bookings(db: AsyncSession, user_id: str, limit: int = 50, offset: int = 0) -> list[Booking]:
+    result = await db.execute(
+        select(Booking).where(Booking.user_id == user_id).order_by(Booking.created_at.desc()).limit(limit).offset(offset)
+    )
     return list(result.scalars().all())

@@ -16,6 +16,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import AuthenticatedUser, get_current_user
+from app.core.rate_limit import limiter
 from app.core.security import verify_access_token
 from app.models import User
 from app.schemas.auth import AuthResponse, LoginRequest, RefreshRequest, RegisterRequest, UserOut
@@ -25,7 +26,8 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 
 @router.post("/register", response_model=AuthResponse, status_code=status.HTTP_201_CREATED)
-async def register(body: RegisterRequest, db: AsyncSession = Depends(get_db)):
+@limiter.limit("5/minute")
+async def register(request: Request, body: RegisterRequest, db: AsyncSession = Depends(get_db)):
     access_token, refresh_token, user, roles = await auth_service.register(
         db, body.first_name, body.last_name, body.email, body.password, body.phone
     )
@@ -37,7 +39,8 @@ async def register(body: RegisterRequest, db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/login", response_model=AuthResponse)
-async def login(body: LoginRequest, db: AsyncSession = Depends(get_db)):
+@limiter.limit("10/minute")
+async def login(request: Request, body: LoginRequest, db: AsyncSession = Depends(get_db)):
     access_token, refresh_token, user, roles = await auth_service.login(db, body.email, body.password)
     return AuthResponse(
         access_token=access_token,
@@ -74,13 +77,15 @@ class OtpVerifyBody(BaseModel):
 
 
 @router.post("/otp/request", status_code=status.HTTP_204_NO_CONTENT)
-async def request_otp(body: OtpRequestBody):
+@limiter.limit("3/minute")
+async def request_otp(request: Request, body: OtpRequestBody):
     await otp_service.request_otp(body.phone)
     return None
 
 
 @router.post("/otp/verify", status_code=status.HTTP_204_NO_CONTENT)
-async def verify_otp(body: OtpVerifyBody, db: AsyncSession = Depends(get_db)):
+@limiter.limit("5/minute")
+async def verify_otp(request: Request, body: OtpVerifyBody, db: AsyncSession = Depends(get_db)):
     await otp_service.verify_otp(db, body.phone, body.code)
     return None
 

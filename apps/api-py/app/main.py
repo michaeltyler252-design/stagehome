@@ -2,13 +2,19 @@
 Direct port of apps/api/src/main.ts's bootstrap() function.
 """
 
+import logging
+
 from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.responses import Response
 
 from app.core.config import settings
 from app.core.cors_origin_matcher import is_allowed_origin
+from app.core.rate_limit import limiter
 from app.routers import (
     agreements,
     auth,
@@ -28,13 +34,40 @@ from app.routers import (
     verification,
 )
 
+# Production-readiness audit finding: LOG_LEVEL was defined in Settings
+# but never actually applied anywhere — every logging.getLogger() call
+# throughout the app was relying on Python's default root logger, which
+# silently drops anything below WARNING. This makes the configured level
+# real.
+logging.basicConfig(
+    level=getattr(logging, settings.log_level.upper(), logging.INFO),
+    format="%(asctime)s %(levelname)s [%(name)s] %(message)s",
+)
+logger = logging.getLogger(__name__)
+
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     """Equivalent of helmet() in the original — same CSP/HSTS-style
-    defaults for a JSON API (no inline scripts/styles served here)."""
+    defaults for a JSON API (no inline scripts/styles served here).
+
+    Also the actual, reliable place unhandled exceptions get caught:
+    production-readiness audit finding — a bare @app.exception_handler
+    was tried first, but Starlette's BaseHTTPMiddleware.call_next() can
+    let an exception bypass it entirely (confirmed by actually crashing
+    a request against an unreachable database: the exception propagated
+    all the way out of the ASGI call itself, past the app-level handler,
+    as a raw unhandled Python exception — not a JSON 500). Catching here,
+    in the outermost middleware's own dispatch(), is what actually works,
+    verified by reproducing the exact same crash and confirming a clean
+    JSON 500 now instead."""
 
     async def dispatch(self, request: Request, call_next):
-        response: Response = await call_next(request)
+        try:
+            response: Response = await call_next(request)
+        except Exception as exc:
+            logger.error("Unhandled exception on %s %s", request.method, request.url.path, exc_info=exc)
+            return JSONResponse(status_code=500, content={"detail": "An unexpected error occurred."})
+
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
@@ -90,6 +123,8 @@ def create_app() -> FastAPI:
         docs_url="/api/v1/docs",
         openapi_url="/api/v1/openapi.json",
     )
+    app.state.limiter = limiter
+    app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
     app.add_middleware(SecurityHeadersMiddleware)
     app.add_middleware(CorsMiddleware)
