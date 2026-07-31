@@ -22,7 +22,7 @@ RUN composer install --no-dev --no-interaction --no-scripts --no-autoloader --pr
 
 FROM deps AS build
 COPY apps/web-laravel ./
-RUN mkdir -p bootstrap/cache storage/framework/{sessions,views,cache} storage/logs \
+RUN mkdir -p bootstrap/cache storage/framework/sessions storage/framework/views storage/framework/cache storage/logs \
     && composer dump-autoload --optimize --no-dev
 
 FROM php:8.3-fpm AS runtime
@@ -34,7 +34,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends libpq-dev ca-ce
 WORKDIR /repo/apps/web-laravel
 
 COPY --chown=www-data:www-data --from=build /repo/apps/web-laravel ./
-RUN mkdir -p storage/framework/{sessions,views,cache} storage/logs bootstrap/cache \
+RUN mkdir -p storage/framework/sessions storage/framework/views storage/framework/cache storage/logs bootstrap/cache \
     && chown -R www-data:www-data storage bootstrap/cache
 
 COPY apps/web-laravel/docker/nginx.conf.template /etc/nginx/nginx.conf.template
