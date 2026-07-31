@@ -25,8 +25,10 @@ COPY apps/web-laravel ./
 RUN composer dump-autoload --optimize --no-dev
 
 FROM php:8.3-cli AS runtime
-RUN apt-get update && apt-get install -y --no-install-recommends libpq5 ca-certificates \
+RUN apt-get update && apt-get install -y --no-install-recommends libpq-dev ca-certificates \
     && docker-php-ext-install pdo pdo_pgsql \
+    && apt-get purge -y --auto-remove libpq-dev \
+    && apt-get install -y --no-install-recommends libpq5 \
     && rm -rf /var/lib/apt/lists/* \
     && useradd --system --uid 1001 --home /home/appuser --shell /bin/sh appuser \
     && mkdir -p /home/appuser
