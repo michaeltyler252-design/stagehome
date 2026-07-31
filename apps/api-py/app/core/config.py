@@ -8,6 +8,8 @@ renaming, no new secrets to generate, no downtime from a variable-name
 mismatch during cutover.
 """
 
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -73,13 +75,43 @@ class Settings(BaseSettings):
         """SQLAlchemy's asyncpg dialect needs 'postgresql+asyncpg://', but
         Railway's real DATABASE_URL is plain 'postgresql://'. Derive the
         driver-qualified form here rather than requiring a second,
-        differently-named environment variable."""
+        differently-named environment variable.
+
+        Real bug found via an actual Railway deployment failure and fixed
+        here: this project's DATABASE_URL was originally set on Railway
+        using Prisma's own convention of a trailing "?schema=public"
+        query parameter (Prisma understands this; it's how Prisma picks
+        the default Postgres schema). SQLAlchemy's async engine forwards
+        any query-string parameters it doesn't recognize straight through
+        as keyword arguments to the underlying driver's connect() call —
+        and asyncpg has no "schema" parameter at all, so every connection
+        attempt failed with `TypeError: connect() got an unexpected
+        keyword argument 'schema'`. This app already sets each model's
+        schema explicitly via SQLAlchemy's own __table_args__ = {"schema":
+        "public"} / {"schema": "staging"} (see app/models/), which is the
+        correct, real mechanism for this — the query parameter was never
+        needed and is now stripped defensively so a DATABASE_URL carried
+        over from the old Prisma convention can never break the
+        connection again, regardless of what's actually set on Railway.
+        """
         url = self.database_url
         if url.startswith("postgresql://"):
-            return url.replace("postgresql://", "postgresql+asyncpg://", 1)
-        if url.startswith("postgres://"):
-            return url.replace("postgres://", "postgresql+asyncpg://", 1)
-        return url
+            url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
+        elif url.startswith("postgres://"):
+            url = url.replace("postgres://", "postgresql+asyncpg://", 1)
+
+        parsed = urlsplit(url)
+        if parsed.query:
+            # Strip only "schema" — the confirmed culprit (Prisma's own
+            # convention, which asyncpg has no equivalent parameter for).
+            # Deliberately conservative: any other query parameter (e.g.
+            # sslmode) is left untouched in case it's genuinely needed by
+            # whatever's actually set on Railway.
+            remaining = [
+                (k, v) for k, v in parse_qsl(parsed.query, keep_blank_values=True) if k != "schema"
+            ]
+            parsed = parsed._replace(query=urlencode(remaining))
+        return urlunsplit(parsed)
 
 
 settings = Settings()
