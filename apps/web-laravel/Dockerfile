@@ -22,7 +22,8 @@ RUN composer install --no-dev --no-interaction --no-scripts --no-autoloader --pr
 
 FROM deps AS build
 COPY apps/web-laravel ./
-RUN composer dump-autoload --optimize --no-dev
+RUN mkdir -p bootstrap/cache storage/framework/{sessions,views,cache} storage/logs \
+    && composer dump-autoload --optimize --no-dev
 
 FROM php:8.3-cli AS runtime
 RUN apt-get update && apt-get install -y --no-install-recommends libpq-dev ca-certificates \
