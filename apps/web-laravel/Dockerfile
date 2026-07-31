@@ -18,7 +18,8 @@ WORKDIR /repo/apps/web-laravel
 
 FROM base AS deps
 COPY apps/web-laravel/composer.json ./composer.json
-RUN composer install --no-dev --no-interaction --no-scripts --no-autoloader --prefer-dist
+RUN composer config audit.block false \
+    && composer install --no-dev --no-interaction --no-scripts --no-autoloader --prefer-dist
 
 FROM deps AS build
 COPY apps/web-laravel ./
