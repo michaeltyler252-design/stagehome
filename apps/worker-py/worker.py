@@ -1,12 +1,11 @@
 """
-Direct port of apps/worker/src/index.ts.
+StageHome Celery worker.
 
-Milestone-1-equivalent scope, matching the original exactly: process
-scaffold only. Real queues (booking-hold expiry, payment-callback
-reconciliation, notification dispatch, media processing) are introduced
-alongside the milestones that own them — none of that logic exists in
-the original NestJS worker either, so there is nothing to port yet
-beyond this scaffold.
+Milestone-1-equivalent scope: process scaffold only. Real queues
+(booking-hold expiry, payment-callback reconciliation, notification
+dispatch, media processing) are introduced alongside the milestones that
+own them — this matches the project's actual current state; no queue
+logic has been built yet in either language this project has used.
 """
 
 import os

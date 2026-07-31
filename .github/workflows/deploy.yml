@@ -7,11 +7,16 @@ on:
 
 # This workflow requires the following GitHub repository secrets before it
 # can run for real (none are guessed or fabricated here):
-#   REGISTRY_USERNAME, REGISTRY_PASSWORD   — container registry credentials
-#   VERCEL_TOKEN, VERCEL_ORG_ID, VERCEL_PROJECT_ID — for apps/web
-#   Plus whatever your chosen host (Render/Railway/Fly.io/ECS) needs for
-#   apps/api and apps/worker — intentionally not assumed, since Part D lists
-#   several acceptable hosts rather than mandating one.
+#   REGISTRY_USERNAME, REGISTRY_PASSWORD — container registry credentials,
+#     for the FastAPI backend image (apps/api-py)
+#   Plus whatever your chosen host (Railway/Render/Fly.io/ECS) needs for
+#     the backend — intentionally not assumed.
+#   Laravel frontend hosting (apps/web-laravel) is NOT wired up here at
+#   all yet — see apps/web-laravel/MIGRATION_LARAVEL.md for why: this repo
+#   has never been through `composer install` for real (the sandbox that
+#   built it has no Packagist access), so there's no verified deployment
+#   artifact to push yet. Wire this job up once that's been done for real
+#   on a machine with normal internet access.
 
 jobs:
   test-before-deploy:
@@ -32,24 +37,28 @@ jobs:
       redis:
         image: redis:7-alpine
         ports: ["6379:6379"]
+    defaults:
+      run:
+        working-directory: apps/api-py
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-        with: { version: 9.7.0 }
-      - uses: actions/setup-node@v4
-        with: { node-version: 20, cache: "pnpm" }
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm lint
-      - run: pnpm typecheck
-      - run: pnpm db:generate
-        env:
-          DATABASE_URL: postgresql://shm_ci:shm_ci@localhost:5432/shm_ci
-      - run: pnpm test
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+          cache-dependency-path: apps/api-py/requirements.txt
+      - run: pip install -r requirements.txt
+      - name: Run tests
+        run: python -m pytest app/tests/ -v
         env:
           DATABASE_URL: postgresql://shm_ci:shm_ci@localhost:5432/shm_ci
           REDIS_URL: redis://localhost:6379
+          JWT_ACCESS_SECRET: ci-test-access-secret
+          JWT_REFRESH_SECRET: ci-test-refresh-secret
+          WEB_APP_ORIGIN: http://localhost:3000
+          NODE_ENV: development
 
-  build-and-push-images:
+  build-and-push-api-image:
     needs: test-before-deploy
     runs-on: ubuntu-latest
     if: github.event_name == 'push'
@@ -60,35 +69,20 @@ jobs:
         with:
           username: ${{ secrets.REGISTRY_USERNAME }}
           password: ${{ secrets.REGISTRY_PASSWORD }}
-      - name: Build and push API image
+      - name: Build and push FastAPI image
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: apps/api/Dockerfile
+          file: apps/api-py/Dockerfile
           push: true
           tags: ghcr.io/${{ github.repository }}/api:${{ github.sha }},ghcr.io/${{ github.repository }}/api:latest
-      - name: Build and push worker image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: apps/worker/Dockerfile
-          push: true
-          tags: ghcr.io/${{ github.repository }}/worker:${{ github.sha }},ghcr.io/${{ github.repository }}/worker:latest
 
-  deploy-web:
-    needs: test-before-deploy
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push'
-    steps:
-      - uses: actions/checkout@v4
-      - name: Deploy to Vercel
-        run: npx vercel deploy --prod --token=${{ secrets.VERCEL_TOKEN }}
-        working-directory: apps/web
-        env:
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-
-  # Deploying the built api/worker images to your chosen host (Render,
-  # Railway, Fly.io, or ECS) is intentionally left as a follow-up step here
-  # — each host's deploy action needs its own secrets and is a real decision
-  # for whoever runs this, not something to guess on their behalf.
+  # Deploying the built API image to your chosen host (Railway, Render,
+  # Fly.io, or ECS) is intentionally left as a follow-up step here — each
+  # host's deploy action needs its own secrets and is a real decision for
+  # whoever runs this, not something to guess on their behalf. See
+  # railway.json at the repo root for the Railway-specific config this
+  # project already has ready to go.
+  #
+  # Laravel frontend deployment: not wired up — see the note at the top
+  # of this file.
