@@ -5,7 +5,7 @@
     "dockerfilePath": "apps/web-laravel/Dockerfile"
   },
   "deploy": {
-    "healthcheckPath": "/up",
+    "healthcheckPath": "/universities",
     "healthcheckTimeout": 120,
     "restartPolicyType": "ON_FAILURE"
   }
