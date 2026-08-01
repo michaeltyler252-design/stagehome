@@ -1,0 +1,5 @@
+# Shell scripts must keep LF line endings regardless of the checking-out
+# platform's line-ending settings — a Windows checkout with CRLF-converted
+# line endings would break apps/web-laravel/docker/start.sh (and any
+# other .sh file) inside the Linux containers this project builds.
+*.sh text eol=lf

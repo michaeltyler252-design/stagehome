@@ -1,16 +1,20 @@
 # StageHome — Kenyan Student Housing Marketplace
 
-> **Architecture note (current):** This project is now a two-service,
-> Python + Laravel stack only:
+> **Architecture note (current):** This project is a two-service,
+> Python + Laravel stack:
 > - **`apps/api-py`** — FastAPI/SQLAlchemy/PostgreSQL/Redis/Celery backend.
->   See `apps/api-py/MIGRATION.md` for exactly what's ported and tested
->   (60 real tests passing) versus what's still in progress.
+>   65 real tests passing. Deployed and verified live on Railway.
 > - **`apps/web-laravel`** — Laravel 11/PHP 8.3 frontend, consuming the
->   FastAPI backend over HTTP. See `apps/web-laravel/MIGRATION_LARAVEL.md`
->   for an equally honest disclosure: this code is syntax-verified and
->   internally consistency-checked, but has never been booted against a
->   real Laravel installation (the sandbox that built it has no network
->   access to Packagist).
+>   FastAPI backend over HTTP. Deployed and verified live on Railway —
+>   real HTTP 200s confirmed on the homepage, universities, search,
+>   login, and register pages. See `apps/web-laravel/MIGRATION_LARAVEL.md`
+>   for the full history of getting this booted for the first time
+>   (this repo's own dev sandbox never had Packagist access; Railway's
+>   build infrastructure did).
+>
+> **Local development**: see `LOCAL_DEVELOPMENT.md` and the root
+> `docker-compose.yml` — the same Dockerfiles already verified working
+> on Railway, runnable locally via `docker compose up --build`.
 >
 > The previous NestJS/TypeScript backend and Next.js/React frontend have
 > been fully removed. Everything below this note is historical — it

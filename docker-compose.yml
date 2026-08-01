@@ -1,0 +1,126 @@
+# StageHome — local development stack.
+#
+# Windows (Docker Desktop, WSL2 backend): from a PowerShell or WSL prompt
+# in the repo root, run:
+#   docker compose up --build
+#
+# This builds every service from the SAME Dockerfiles already verified
+# working on Railway (see git history for that verification) — nothing
+# here is a different, untested local-only setup.
+#
+# One real, honest limitation: this repository does not include a
+# composer.lock file. The development sandbox that built this project
+# had no network access to Packagist and could never run `composer
+# install` itself (see apps/web-laravel/MIGRATION_LARAVEL.md). The `web`
+# service's build step below runs `composer install` fresh — this
+# requires YOUR machine's real internet access, which it has (unlike
+# that sandbox), and will generate a real composer.lock on first build.
+
+services:
+  postgres:
+    image: postgis/postgis:16-3.4
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: stagehome
+      POSTGRES_PASSWORD: stagehome_local_dev
+      POSTGRES_DB: stagehome
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infrastructure/docker/postgres-init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U stagehome"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api-py/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "4000:4000"
+    environment:
+      NODE_ENV: development
+      API_PORT: "4000"
+      DATABASE_URL: postgresql://stagehome:stagehome_local_dev@postgres:5432/stagehome
+      REDIS_URL: redis://redis:6379
+      JWT_ACCESS_SECRET: local-dev-access-secret-change-in-production
+      JWT_REFRESH_SECRET: local-dev-refresh-secret-change-in-production
+      WEB_APP_ORIGIN: http://localhost:8080
+      LOG_LEVEL: info
+
+  # One-off: run migrations against the local database.
+  #   docker compose run --rm api-migrate
+  api-migrate:
+    build:
+      context: .
+      dockerfile: apps/api-py/Dockerfile
+    profiles: ["tools"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://stagehome:stagehome_local_dev@postgres:5432/stagehome
+      REDIS_URL: redis://redis:6379
+      JWT_ACCESS_SECRET: local-dev-access-secret-change-in-production
+      JWT_REFRESH_SECRET: local-dev-refresh-secret-change-in-production
+      WEB_APP_ORIGIN: http://localhost:8080
+    entrypoint: ["alembic"]
+    command: ["upgrade", "head"]
+
+  worker:
+    build:
+      context: .
+      dockerfile: apps/worker-py/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      REDIS_URL: redis://redis:6379
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web-laravel/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      - api
+      - redis
+    ports:
+      - "8080:8080"
+    environment:
+      APP_NAME: StageHome
+      APP_ENV: local
+      APP_DEBUG: "true"
+      APP_KEY: "base64:dsiD3m8JeLtrjhUxd7xkWQlIJCySqFokyskSpH5qgfo="
+      STAGEHOME_API_BASE_URL: http://api:4000/api/v1
+      LOG_CHANNEL: stack
+      LOG_LEVEL: debug
+      SESSION_DRIVER: redis
+      CACHE_STORE: redis
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      REDIS_DB: "1"
+
+volumes:
+  postgres_data:
