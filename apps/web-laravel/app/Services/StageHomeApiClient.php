@@ -30,10 +30,28 @@ class StageHomeApiClient
         return $request;
     }
 
+    /**
+     * Ensures a list response is always a real array of real arrays.
+     * Found via a real production bug: a TypeError ("Cannot access
+     * offset of type string on string") crashed multiple pages whose
+     * Blade templates did $item['key'] on every element of a list
+     * response, assuming every element was itself an associative array.
+     * This guards every list-returning method in one place rather than
+     * scattering the same defensive check across every controller and
+     * view that consumes them.
+     */
+    private function normalizeList($value): array
+    {
+        if (!is_array($value)) {
+            return [];
+        }
+        return array_values(array_filter($value, fn ($item) => is_array($item)));
+    }
+
     // --- Public: counties ---
     public function listCounties(): array
     {
-        return $this->client()->get('/public/counties')->json() ?? [];
+        return $this->normalizeList($this->client()->get('/public/counties')->json());
     }
 
     public function getCounty(string $slug): ?array
@@ -46,7 +64,7 @@ class StageHomeApiClient
     public function listUniversities(?string $countySlug = null): array
     {
         $query = $countySlug ? ['countySlug' => $countySlug] : [];
-        return $this->client()->get('/public/universities', $query)->json() ?? [];
+        return $this->normalizeList($this->client()->get('/public/universities', $query)->json());
     }
 
     public function getUniversity(string $slug): ?array
@@ -58,8 +76,12 @@ class StageHomeApiClient
     // --- Public: properties / search ---
     public function searchProperties(array $params = []): array
     {
-        return $this->client()->get('/public/properties', $params)->json()
-            ?? ['results' => [], 'pagination' => ['page' => 1, 'limit' => 12, 'total' => 0, 'totalPages' => 1]];
+        $result = $this->client()->get('/public/properties', $params)->json();
+        if (!is_array($result)) {
+            return ['results' => [], 'pagination' => ['page' => 1, 'limit' => 12, 'total' => 0, 'totalPages' => 1]];
+        }
+        $result['results'] = $this->normalizeList($result['results'] ?? []);
+        return $result;
     }
 
     public function getProperty(string $slug): ?array
@@ -71,7 +93,7 @@ class StageHomeApiClient
     // --- Blog ---
     public function listBlogPosts(): array
     {
-        return $this->client()->get('/public/blog')->json() ?? [];
+        return $this->normalizeList($this->client()->get('/public/blog')->json());
     }
 
     public function getBlogPost(string $slug): ?array
